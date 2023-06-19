@@ -28,43 +28,41 @@ package me.lucko.luckperms.forge.listeners;
 import com.mojang.brigadier.context.CommandContextBuilder;
 import com.mojang.brigadier.context.ParsedCommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-
+import java.io.IOException;
+import java.util.Locale;
 import me.lucko.luckperms.common.config.ConfigKeys;
 import me.lucko.luckperms.common.locale.Message;
 import me.lucko.luckperms.forge.LPForgePlugin;
 import me.lucko.luckperms.forge.util.BrigadierInjector;
-
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.server.players.ServerOpList;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
+import net.minecraft.server.management.OpList;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.CommandEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
-import java.io.IOException;
-import java.util.Locale;
+import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 
 public class ForgePlatformListener {
     private final LPForgePlugin plugin;
 
-    public ForgePlatformListener(LPForgePlugin plugin) {
+    public ForgePlatformListener(final LPForgePlugin plugin) {
         this.plugin = plugin;
     }
 
     @SubscribeEvent
-    public void onCommand(CommandEvent event) {
-        CommandContextBuilder<CommandSourceStack> context = event.getParseResults().getContext();
+    public void onCommand(final CommandEvent event) {
+        final CommandContextBuilder<CommandSource> context = event.getParseResults().getContext();
 
         if (!this.plugin.getConfiguration().get(ConfigKeys.OPS_ENABLED)) {
-            for (ParsedCommandNode<CommandSourceStack> node : context.getNodes()) {
+            for (final ParsedCommandNode<CommandSource> node : context.getNodes()) {
                 if (!(node.getNode() instanceof LiteralCommandNode)) {
                     continue;
                 }
 
-                String name = node.getNode().getName().toLowerCase(Locale.ROOT);
+                final String name = node.getNode().getName().toLowerCase(Locale.ROOT);
                 if (name.equals("op") || name.equals("deop")) {
-                    Message.OP_DISABLED.send(this.plugin.getSenderFactory().wrap(context.getSource()));
+                    Message.OP_DISABLED.send(
+                            this.plugin.getSenderFactory().wrap(context.getSource()));
                     event.setCanceled(true);
                     return;
                 }
@@ -73,19 +71,19 @@ public class ForgePlatformListener {
     }
 
     @SubscribeEvent
-    public void onAddReloadListener(AddReloadListenerEvent event) {
-        Commands commands = event.getServerResources().getCommands();
+    public void onAddReloadListener(final AddReloadListenerEvent event) {
+        final Commands commands = event.getDataPackRegistries().getCommands();
         BrigadierInjector.inject(this.plugin, commands.getDispatcher());
     }
 
     @SubscribeEvent
-    public void onServerStarted(ServerStartedEvent event) {
+    public void onServerStarted(final FMLServerStartedEvent event) {
         if (!this.plugin.getConfiguration().get(ConfigKeys.OPS_ENABLED)) {
-            ServerOpList ops = event.getServer().getPlayerList().getOps();
+            final OpList ops = event.getServer().getPlayerList().getOps();
             ops.getEntries().clear();
             try {
                 ops.save();
-            } catch (IOException ex) {
+            } catch (final IOException ex) {
                 this.plugin.getLogger().severe("Encountered an error while saving ops", ex);
             }
         }

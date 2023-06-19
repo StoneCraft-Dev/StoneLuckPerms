@@ -23,32 +23,19 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.service;
+package me.lucko.luckperms.forge.mixins;
 
-import me.lucko.luckperms.common.command.access.CommandPermission;
-import me.lucko.luckperms.forge.LPForgePlugin;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
-import net.minecraftforge.server.permission.DefaultPermissionLevel;
-import net.minecraftforge.server.permission.PermissionAPI;
+import net.minecraft.network.NetworkManager;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.network.FMLLoginWrapper;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
-public class ForgePermissionHandlerListener {
-    private final LPForgePlugin plugin;
+@Mixin(value = FMLLoginWrapper.class, remap = false)
+public interface MixinFMLLoginWrapperInvoker {
 
-    public ForgePermissionHandlerListener(final LPForgePlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    // TODO: Check if FMLLoadCompleteEvent works
-    @SubscribeEvent
-    public void onPermissionGatherHandler(final FMLLoadCompleteEvent event) {
-        // Override the default permission handler with LuckPerms
-        PermissionAPI.setPermissionHandler(new ForgePermissionHandler(this.plugin));
-
-        // register luckperms nodes
-        for (final CommandPermission permission : CommandPermission.values()) {
-            PermissionAPI.registerNode(permission.getPermission(), DefaultPermissionLevel.NONE,
-                    "LuckPerms permission node.");
-        }
-    }
+    @Invoker("sendServerToClientLoginPacket")
+    void sendServerToClientLoginPacket(final ResourceLocation resourceLocation,
+            final PacketBuffer buffer, final int index, final NetworkManager manager);
 }

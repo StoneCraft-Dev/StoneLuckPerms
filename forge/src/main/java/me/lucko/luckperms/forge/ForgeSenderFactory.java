@@ -25,6 +25,8 @@
 
 package me.lucko.luckperms.forge;
 
+import java.util.Locale;
+import java.util.UUID;
 import me.lucko.luckperms.common.cacheddata.result.TristateResult;
 import me.lucko.luckperms.common.locale.TranslationManager;
 import me.lucko.luckperms.common.query.QueryOptionsImpl;
@@ -34,44 +36,46 @@ import me.lucko.luckperms.common.verbose.VerboseCheckTarget;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.forge.capabilities.UserCapability;
 import me.lucko.luckperms.forge.capabilities.UserCapabilityImpl;
-
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.luckperms.api.util.Tristate;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.command.CommandSource;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.text.ITextComponent;
 
-import java.util.Locale;
-import java.util.UUID;
-
-public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, CommandSourceStack> {
-    public ForgeSenderFactory(LPForgePlugin plugin) {
+public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, CommandSource> {
+    public ForgeSenderFactory(final LPForgePlugin plugin) {
         super(plugin);
     }
 
+    public static ITextComponent toNativeText(final Component component) {
+        return ITextComponent.Serializer.fromJson(
+                GsonComponentSerializer.gson().serialize(component));
+    }
+
     @Override
-    protected UUID getUniqueId(CommandSourceStack commandSource) {
-        if (commandSource.getEntity() instanceof Player) {
+    protected UUID getUniqueId(final CommandSource commandSource) {
+        if (commandSource.getEntity() instanceof PlayerEntity) {
             return commandSource.getEntity().getUUID();
         }
         return Sender.CONSOLE_UUID;
     }
 
     @Override
-    protected String getName(CommandSourceStack commandSource) {
-        if (commandSource.getEntity() instanceof Player) {
+    protected String getName(final CommandSource commandSource) {
+        if (commandSource.getEntity() instanceof PlayerEntity) {
             return commandSource.getTextName();
         }
         return Sender.CONSOLE_NAME;
     }
 
     @Override
-    protected void sendMessage(CommandSourceStack sender, Component message) {
-        Locale locale;
-        if (sender.getEntity() instanceof ServerPlayer) {
-            ServerPlayer player = (ServerPlayer) sender.getEntity();
-            UserCapabilityImpl user = UserCapabilityImpl.get(player);
+    protected void sendMessage(final CommandSource sender, final Component message) {
+        final Locale locale;
+        if (sender.getEntity() instanceof ServerPlayerEntity) {
+            final ServerPlayerEntity player = (ServerPlayerEntity) sender.getEntity();
+            final UserCapabilityImpl user = UserCapabilityImpl.get(player);
             locale = user.getLocale(player);
         } else {
             locale = null;
@@ -81,36 +85,34 @@ public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, CommandSour
     }
 
     @Override
-    protected Tristate getPermissionValue(CommandSourceStack commandSource, String node) {
-        if (commandSource.getEntity() instanceof ServerPlayer) {
-            ServerPlayer player = (ServerPlayer) commandSource.getEntity();
-            UserCapability user = UserCapabilityImpl.get(player);
+    protected Tristate getPermissionValue(final CommandSource commandSource, final String node) {
+        if (commandSource.getEntity() instanceof ServerPlayerEntity) {
+            final ServerPlayerEntity player = (ServerPlayerEntity) commandSource.getEntity();
+            final UserCapability user = UserCapabilityImpl.get(player);
             return user.checkPermission(node);
         }
 
-        VerboseCheckTarget target = VerboseCheckTarget.internal(commandSource.getTextName());
-        getPlugin().getVerboseHandler().offerPermissionCheckEvent(CheckOrigin.PLATFORM_API_HAS_PERMISSION, target, QueryOptionsImpl.DEFAULT_CONTEXTUAL, node, TristateResult.UNDEFINED);
-        getPlugin().getPermissionRegistry().offer(node);
+        final VerboseCheckTarget target = VerboseCheckTarget.internal(commandSource.getTextName());
+        this.getPlugin().getVerboseHandler()
+                .offerPermissionCheckEvent(CheckOrigin.PLATFORM_API_HAS_PERMISSION, target,
+                        QueryOptionsImpl.DEFAULT_CONTEXTUAL, node, TristateResult.UNDEFINED);
+        this.getPlugin().getPermissionRegistry().offer(node);
         return Tristate.UNDEFINED;
     }
 
     @Override
-    protected boolean hasPermission(CommandSourceStack commandSource, String node) {
-        return getPermissionValue(commandSource, node).asBoolean();
+    protected boolean hasPermission(final CommandSource commandSource, final String node) {
+        return this.getPermissionValue(commandSource, node).asBoolean();
     }
 
     @Override
-    protected void performCommand(CommandSourceStack sender, String command) {
+    protected void performCommand(final CommandSource sender, final String command) {
         sender.getServer().getCommands().performCommand(sender, command);
     }
 
     @Override
-    protected boolean isConsole(CommandSourceStack sender) {
-        return !(sender.getEntity() instanceof Player);
-    }
-
-    public static net.minecraft.network.chat.Component toNativeText(Component component) {
-        return net.minecraft.network.chat.Component.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component));
+    protected boolean isConsole(final CommandSource sender) {
+        return !(sender.getEntity() instanceof PlayerEntity);
     }
 
 }

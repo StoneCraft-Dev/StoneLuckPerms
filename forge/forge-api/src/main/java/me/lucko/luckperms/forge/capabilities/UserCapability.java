@@ -27,14 +27,13 @@ package me.lucko.luckperms.forge.capabilities;
 
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
 
 /**
- * A Forge {@link Capability} that attaches LuckPerms functionality onto {@link ServerPlayer}s.
+ * A Forge {@link Capability} that attaches LuckPerms functionality onto
+ * {@link ServerPlayerEntity}s.
  */
 public interface UserCapability {
 
@@ -44,18 +43,13 @@ public interface UserCapability {
     ResourceLocation IDENTIFIER = new ResourceLocation("luckperms", "user");
 
     /**
-     * The capability instance.
-     */
-    Capability<UserCapability> CAPABILITY = CapabilityManager.get(new CapabilityToken<UserCapability>(){});
-
-    /**
      * Checks for a permission.
      *
      * @param permission the permission
      * @return the result
      */
-    default boolean hasPermission(String permission) {
-        return checkPermission(permission).asBoolean();
+    default boolean hasPermission(final String permission) {
+        return this.checkPermission(permission).asBoolean();
     }
 
     /**
@@ -69,7 +63,7 @@ public interface UserCapability {
     /**
      * Runs a permission check.
      *
-     * @param permission the permission
+     * @param permission   the permission
      * @param queryOptions the query options
      * @return the result
      */

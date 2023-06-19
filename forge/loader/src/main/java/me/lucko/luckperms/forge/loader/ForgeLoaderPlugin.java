@@ -25,10 +25,11 @@
 
 package me.lucko.luckperms.forge.loader;
 
+import java.util.function.Supplier;
 import me.lucko.luckperms.common.loader.JarInJarClassLoader;
 import me.lucko.luckperms.common.loader.LoaderBootstrap;
-
-import net.minecraftforge.fml.IExtensionPoint;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.ExtensionPoint;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -36,13 +37,11 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.NetworkConstants;
-
+import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.fml.network.FMLNetworkConstants;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.function.Supplier;
 
 @Mod(value = "luckperms")
 public class ForgeLoaderPlugin implements Supplier<ModContainer> {
@@ -57,17 +56,25 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
     private LoaderBootstrap plugin;
 
     public ForgeLoaderPlugin() {
-        this.container = ModList.get().getModContainerByObject(this).orElse(null);
+        if (FMLLoader.getDist() == Dist.CLIENT) {
+            throw new IllegalStateException("This mod is server-side only!");
+        }
 
-        markAsNotRequiredClientSide();
+        this.container = ModList.get().getModContainerByObject(this).orElse(null);
 
         if (FMLEnvironment.dist.isClient()) {
             LOGGER.info("Skipping LuckPerms init (not supported on the client!)");
             return;
         }
 
-        this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
+        this.loader = new JarInJarClassLoader(this.getClass().getClassLoader(), JAR_NAME);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
+    }
+
+    private static void markAsNotRequiredClientSide() {
+        // workaround as we don't compile against java 17
+        ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.DISPLAYTEST,
+                () -> Pair.of(() -> FMLNetworkConstants.IGNORESERVERONLY, (s, b) -> true));
     }
 
     @Override
@@ -75,26 +82,8 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
         return this.container;
     }
 
-    public void onCommonSetup(FMLCommonSetupEvent event) {
+    public void onCommonSetup(final FMLCommonSetupEvent event) {
         this.plugin = this.loader.instantiatePlugin(BOOTSTRAP_CLASS, Supplier.class, this);
         this.plugin.onLoad();
     }
-
-    private static void markAsNotRequiredClientSide() {
-        try {
-            // workaround as we don't compile against java 17
-            ModLoadingContext.class.getDeclaredMethod("registerExtensionPoint", Class.class, Supplier.class)
-                    .invoke(
-                            ModLoadingContext.get(),
-                            IExtensionPoint.DisplayTest.class,
-                            (Supplier<?>) () -> new IExtensionPoint.DisplayTest(
-                                    () -> NetworkConstants.IGNORESERVERONLY,
-                                    (a, b) -> true
-                            )
-                    );
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
 }

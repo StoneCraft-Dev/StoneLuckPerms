@@ -25,58 +25,87 @@
 
 package me.lucko.luckperms.forge.capabilities;
 
+import java.lang.reflect.Field;
+import java.util.Locale;
 import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
 import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
 import me.lucko.luckperms.common.locale.TranslationManager;
 import me.lucko.luckperms.common.model.User;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.forge.context.ForgeContextManager;
-
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.INBT;
+import net.minecraft.util.Direction;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.CapabilityManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Locale;
 
 public class UserCapabilityImpl implements UserCapability {
 
     /**
-     * Gets a {@link UserCapability} for a given {@link ServerPlayer}.
+     * The capability instance.
+     */
+    public static final Capability<UserCapability> CAPABILITY = getCapability();
+    private boolean initialised = false;
+    private User user;
+    private QueryOptionsCache<ServerPlayerEntity> queryOptionsCache;
+    private String language;
+    private Locale locale;
+
+    public UserCapabilityImpl() {}
+
+    /**
+     * Gets a {@link UserCapability} for a given {@link ServerPlayerEntity}.
      *
      * @param player the player
      * @return the capability
      */
-    public static @NotNull UserCapabilityImpl get(@NotNull Player player) {
-        return (UserCapabilityImpl) player.getCapability(CAPABILITY)
-                .orElseThrow(() -> new IllegalStateException("Capability missing for " + player.getUUID()));
+    public static @NotNull UserCapabilityImpl get(@NotNull final PlayerEntity player) {
+        return (UserCapabilityImpl) player.getCapability(CAPABILITY).orElseThrow(
+                () -> new IllegalStateException("Capability missing for " + player.getUUID()));
     }
 
     /**
-     * Gets a {@link UserCapability} for a given {@link ServerPlayer}.
+     * Gets a {@link UserCapability} for a given {@link ServerPlayerEntity}.
      *
      * @param player the player
      * @return the capability, or null
      */
-    public static @Nullable UserCapabilityImpl getNullable(@NotNull Player player) {
+    public static @Nullable UserCapabilityImpl getNullable(
+            @NotNull final ServerPlayerEntity player) {
         return (UserCapabilityImpl) player.getCapability(CAPABILITY).resolve().orElse(null);
     }
 
-    private boolean initialised = false;
+    private static Capability<UserCapability> getCapability() {
+        CapabilityManager.INSTANCE.register(UserCapability.class,
+                new Capability.IStorage<UserCapability>() {
+                    @Override
+                    public INBT writeNBT(final Capability<UserCapability> capability,
+                            final UserCapability instance, final Direction side) {
+                        return null;
+                    }
 
-    private User user;
-    private QueryOptionsCache<ServerPlayer> queryOptionsCache;
-    private String language;
-    private Locale locale;
+                    @Override
+                    public void readNBT(final Capability<UserCapability> capability,
+                            final UserCapability instance, final Direction side, final INBT nbt) {}
+                }, UserCapabilityImpl::new);
 
-    public UserCapabilityImpl() {
+        try {
+            final Field field = CapabilityManager.class.getDeclaredField("providers");
 
+            field.setAccessible(true);
+
+            return (Capability<UserCapability>) field.get(CapabilityManager.INSTANCE);
+        } catch (final NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Could not get capability!");
+        }
     }
 
-    public void initialise(UserCapabilityImpl previous) {
+    public void initialise(final UserCapabilityImpl previous) {
         this.user = previous.user;
         this.queryOptionsCache = previous.queryOptionsCache;
         this.language = previous.language;
@@ -84,7 +113,8 @@ public class UserCapabilityImpl implements UserCapability {
         this.initialised = true;
     }
 
-    public void initialise(User user, ServerPlayer player, ForgeContextManager contextManager) {
+    public void initialise(final User user, final ServerPlayerEntity player,
+            final ForgeContextManager contextManager) {
         this.user = user;
         this.queryOptionsCache = new QueryOptionsCache<>(player, contextManager);
         this.initialised = true;
@@ -97,19 +127,19 @@ public class UserCapabilityImpl implements UserCapability {
     }
 
     @Override
-    public Tristate checkPermission(String permission) {
-        assertInitialised();
+    public Tristate checkPermission(final String permission) {
+        this.assertInitialised();
 
         if (permission == null) {
             throw new NullPointerException("permission");
         }
 
-        return checkPermission(permission, this.queryOptionsCache.getQueryOptions());
+        return this.checkPermission(permission, this.queryOptionsCache.getQueryOptions());
     }
 
     @Override
-    public Tristate checkPermission(String permission, QueryOptions queryOptions) {
-        assertInitialised();
+    public Tristate checkPermission(final String permission, final QueryOptions queryOptions) {
+        this.assertInitialised();
 
         if (permission == null) {
             throw new NullPointerException("permission");
@@ -119,26 +149,26 @@ public class UserCapabilityImpl implements UserCapability {
             throw new NullPointerException("queryOptions");
         }
 
-        PermissionCache cache = this.user.getCachedData().getPermissionData(queryOptions);
+        final PermissionCache cache = this.user.getCachedData().getPermissionData(queryOptions);
         return cache.checkPermission(permission, CheckOrigin.PLATFORM_API_HAS_PERMISSION).result();
     }
 
     public User getUser() {
-        assertInitialised();
+        this.assertInitialised();
         return this.user;
     }
 
     @Override
     public QueryOptions getQueryOptions() {
-        return getQueryOptionsCache().getQueryOptions();
+        return this.getQueryOptionsCache().getQueryOptions();
     }
 
-    public QueryOptionsCache<ServerPlayer> getQueryOptionsCache() {
-        assertInitialised();
+    public QueryOptionsCache<ServerPlayerEntity> getQueryOptionsCache() {
+        this.assertInitialised();
         return this.queryOptionsCache;
     }
 
-    public Locale getLocale(ServerPlayer player) {
+    public Locale getLocale(final ServerPlayerEntity player) {
         if (this.language == null || !this.language.equals(player.getLanguage())) {
             this.language = player.getLanguage();
             this.locale = TranslationManager.parseLocale(this.language);

@@ -25,70 +25,79 @@
 
 package me.lucko.luckperms.forge.capabilities;
 
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
+import java.lang.reflect.InvocationTargetException;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.CapabilityProvider;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class UserCapabilityListener {
 
-    @SubscribeEvent
-    public void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-        event.register(UserCapabilityImpl.class);
-    }
+    // TODO: Check if onRegisterCapabilities is needed
 
     @SubscribeEvent
-    public void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        if (!(event.getObject() instanceof ServerPlayer)) {
+    public void onAttachCapabilities(final AttachCapabilitiesEvent<Entity> event) {
+        if (!(event.getObject() instanceof ServerPlayerEntity)) {
             return;
         }
 
-        event.addCapability(UserCapability.IDENTIFIER, new UserCapabilityProvider(new UserCapabilityImpl()));
+        event.addCapability(UserCapability.IDENTIFIER,
+                new UserCapabilityProvider(new UserCapabilityImpl()));
     }
 
+    // TODO: Check
     @SubscribeEvent
-    public void onPlayerClone(PlayerEvent.Clone event) {
+    public void onPlayerClone(final PlayerEvent.Clone event) {
         if (!event.isWasDeath()) {
             return;
         }
 
-        Player previousPlayer = event.getOriginal();
-        Player currentPlayer = event.getPlayer();
+        final PlayerEntity previousPlayer = event.getOriginal();
+        final PlayerEntity currentPlayer = event.getPlayer();
 
-        previousPlayer.reviveCaps();
         try {
-            UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);
-            UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
+            CapabilityProvider.class.getDeclaredMethod("reviveCaps").invoke(previousPlayer);
+        } catch (final NoSuchMethodException | InvocationTargetException |
+                       IllegalAccessException e) {
+            throw new UnsupportedOperationException("Could not revive caps of player.");
+        }
+
+        try {
+            final UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);
+            final UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
 
             current.initialise(previous);
             current.getQueryOptionsCache().invalidate();
         } finally {
-            previousPlayer.invalidateCaps();
+            try {
+                CapabilityProvider.class.getDeclaredMethod("invalidateCaps").invoke(previousPlayer);
+            } catch (final NoSuchMethodException | InvocationTargetException |
+                           IllegalAccessException ignored) {}
         }
     }
 
     private static final class UserCapabilityProvider implements ICapabilityProvider {
         private final UserCapabilityImpl userCapability;
 
-        private UserCapabilityProvider(UserCapabilityImpl userCapability) {
+        private UserCapabilityProvider(final UserCapabilityImpl userCapability) {
             this.userCapability = userCapability;
         }
 
         @SuppressWarnings("unchecked")
         @NotNull
         @Override
-        public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-            if (cap != UserCapability.CAPABILITY) {
+        public <T> LazyOptional<T> getCapability(@NotNull final Capability<T> cap,
+                @Nullable final Direction side) {
+            if (cap != UserCapabilityImpl.CAPABILITY) {
                 return LazyOptional.empty();
             }
 

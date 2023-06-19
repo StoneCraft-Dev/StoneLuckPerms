@@ -26,7 +26,8 @@
 package me.lucko.luckperms.forge.listeners;
 
 import com.mojang.authlib.GameProfile;
-
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import me.lucko.luckperms.common.config.ConfigKeys;
 import me.lucko.luckperms.common.locale.Message;
 import me.lucko.luckperms.common.locale.TranslationManager;
@@ -35,48 +36,48 @@ import me.lucko.luckperms.common.plugin.util.AbstractConnectionListener;
 import me.lucko.luckperms.forge.ForgeSenderFactory;
 import me.lucko.luckperms.forge.LPForgePlugin;
 import me.lucko.luckperms.forge.capabilities.UserCapabilityImpl;
-
+import me.lucko.luckperms.forge.util.PlayerNegotiationEvent;
 import net.kyori.adventure.text.Component;
-import net.minecraft.Util;
-import net.minecraft.network.Connection;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.protocol.game.ClientboundChatPacket;
-import net.minecraft.network.protocol.login.ClientboundLoginDisconnectPacket;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.NetworkManager;
+import net.minecraft.network.login.server.SDisconnectLoginPacket;
+import net.minecraft.network.play.server.SChatPacket;
+import net.minecraft.util.Util;
+import net.minecraft.util.text.ChatType;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerNegotiationEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 public class ForgeConnectionListener extends AbstractConnectionListener {
     private final LPForgePlugin plugin;
 
-    public ForgeConnectionListener(LPForgePlugin plugin) {
+    public ForgeConnectionListener(final LPForgePlugin plugin) {
         super(plugin);
         this.plugin = plugin;
     }
 
     @SubscribeEvent
-    public void onPlayerNegotiation(PlayerNegotiationEvent event) {
-        String username = event.getProfile().getName();
-        UUID uniqueId = event.getProfile().isComplete() ? event.getProfile().getId() : Player.createPlayerUUID(username);
+    public void onPlayerNegotiation(final PlayerNegotiationEvent event) {
+        final String username = event.getProfile().getName();
+        final UUID uniqueId = event.getProfile().isComplete() ? event.getProfile().getId()
+                : PlayerEntity.createPlayerUUID(username);
 
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
-            this.plugin.getLogger().info("Processing pre-login (sync phase) for " + uniqueId + " - " + username);
+            this.plugin.getLogger()
+                    .info("Processing pre-login (sync phase) for " + uniqueId + " - " + username);
         }
 
         event.enqueueWork(CompletableFuture.runAsync(() -> {
-            onPlayerNegotiationAsync(event.getConnection(), uniqueId, username);
+            this.onPlayerNegotiationAsync(event.getConnection(), uniqueId, username);
         }, this.plugin.getBootstrap().getScheduler().async()));
     }
 
-    private void onPlayerNegotiationAsync(Connection connection, UUID uniqueId, String username) {
+    private void onPlayerNegotiationAsync(final NetworkManager connection, final UUID uniqueId,
+            final String username) {
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
-            this.plugin.getLogger().info("Processing pre-login (async phase) for " + uniqueId + " - " + username);
+            this.plugin.getLogger()
+                    .info("Processing pre-login (async phase) for " + uniqueId + " - " + username);
         }
 
         /* Actually process the login for the connection.
@@ -89,22 +90,30 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
            - creating a user instance in the UserManager for this connection.
            - setting up cached data. */
         try {
-            User user = loadUser(uniqueId, username);
-            recordConnection(uniqueId);
+            final User user = this.loadUser(uniqueId, username);
+            this.recordConnection(uniqueId);
             this.plugin.getEventDispatcher().dispatchPlayerLoginProcess(uniqueId, username, user);
-        } catch (Exception ex) {
-            this.plugin.getLogger().severe("Exception occurred whilst loading data for " + uniqueId + " - " + username, ex);
-            
+        } catch (final Exception ex) {
+            this.plugin.getLogger()
+                    .severe("Exception occurred whilst loading data for " + uniqueId + " - "
+                            + username, ex);
+
             if (this.plugin.getConfiguration().get(ConfigKeys.CANCEL_FAILED_LOGINS)) {
-                Component component = TranslationManager.render(Message.LOADING_DATABASE_ERROR.build());
-                connection.send(new ClientboundLoginDisconnectPacket(ForgeSenderFactory.toNativeText(component)));
+                final Component component =
+                        TranslationManager.render(Message.LOADING_DATABASE_ERROR.build());
+                connection.send(
+                        new SDisconnectLoginPacket(ForgeSenderFactory.toNativeText(component)));
                 connection.disconnect(ForgeSenderFactory.toNativeText(component));
             } else {
                 // Schedule the message to be sent on the next tick.
-                this.plugin.getBootstrap().getServer().orElseThrow(IllegalStateException::new).execute(() -> {
-                    Component component = TranslationManager.render(Message.LOADING_STATE_ERROR.build());
-                    connection.send(new ClientboundChatPacket(ForgeSenderFactory.toNativeText(component), ChatType.SYSTEM, Util.NIL_UUID));
-                });
+                this.plugin.getBootstrap().getServer().orElseThrow(IllegalStateException::new)
+                        .execute(() -> {
+                            final Component component =
+                                    TranslationManager.render(Message.LOADING_STATE_ERROR.build());
+                            connection.send(
+                                    new SChatPacket(ForgeSenderFactory.toNativeText(component),
+                                            ChatType.SYSTEM, Util.NIL_UUID));
+                        });
             }
 
             this.plugin.getEventDispatcher().dispatchPlayerLoginProcess(uniqueId, username, null);
@@ -112,26 +121,31 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onPlayerLoadFromFile(PlayerEvent.LoadFromFile event) {
-        ServerPlayer player = (ServerPlayer) event.getPlayer();
-        GameProfile profile = player.getGameProfile();
+    public void onPlayerLoadFromFile(final PlayerEvent.LoadFromFile event) {
+        final ServerPlayerEntity player = (ServerPlayerEntity) event.getPlayer();
+        final GameProfile profile = player.getGameProfile();
 
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
-            this.plugin.getLogger().info("Processing post-login for " + profile.getId() + " - " + profile.getName());
+            this.plugin.getLogger().info("Processing post-login for " + profile.getId() + " - "
+                    + profile.getName());
         }
 
-        User user = this.plugin.getUserManager().getIfLoaded(profile.getId());
+        final User user = this.plugin.getUserManager().getIfLoaded(profile.getId());
 
         if (user == null) {
-            if (!getUniqueConnections().contains(profile.getId())) {
-                this.plugin.getLogger().warn("User " + profile.getId() + " - " + profile.getName() +
-                        " doesn't have data pre-loaded, they have never been processed during pre-login in this session.");
+            if (!this.getUniqueConnections().contains(profile.getId())) {
+                this.plugin.getLogger().warn("User " + profile.getId() + " - " + profile.getName()
+                        + " doesn't have data pre-loaded, they have never been processed during "
+                        + "pre-login in this session.");
             } else {
-                this.plugin.getLogger().warn("User " + profile.getId() + " - " + profile.getName() +
-                        " doesn't currently have data pre-loaded, but they have been processed before in this session.");
+                this.plugin.getLogger().warn("User " + profile.getId() + " - " + profile.getName()
+                        + " doesn't currently have data pre-loaded, but they have been processed "
+                        + "before in this session.");
             }
 
-            Component component = TranslationManager.render(Message.LOADING_STATE_ERROR.build(), player.getLanguage());
+            final Component component =
+                    TranslationManager.render(Message.LOADING_STATE_ERROR.build(),
+                            player.getLanguage());
             if (this.plugin.getConfiguration().get(ConfigKeys.CANCEL_FAILED_LOGINS)) {
                 player.connection.disconnect(ForgeSenderFactory.toNativeText(component));
             } else {
@@ -140,15 +154,15 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
         }
 
         // initialise capability
-        UserCapabilityImpl userCapability = UserCapabilityImpl.get(player);
+        final UserCapabilityImpl userCapability = UserCapabilityImpl.get(player);
         userCapability.initialise(user, player, this.plugin.getContextManager());
         this.plugin.getContextManager().signalContextUpdate(player);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        ServerPlayer player = (ServerPlayer) event.getPlayer();
-        handleDisconnect(player.getGameProfile().getId());
+    public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
+        final ServerPlayerEntity player = (ServerPlayerEntity) event.getPlayer();
+        this.handleDisconnect(player.getGameProfile().getId());
     }
 
 }

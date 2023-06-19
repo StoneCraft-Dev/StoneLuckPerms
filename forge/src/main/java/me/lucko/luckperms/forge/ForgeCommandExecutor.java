@@ -30,37 +30,34 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-
+import java.util.List;
+import java.util.ListIterator;
 import me.lucko.luckperms.common.command.BrigadierCommandExecutor;
 import me.lucko.luckperms.common.sender.Sender;
-
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
+import net.minecraft.command.arguments.EntityArgument;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import java.util.List;
-import java.util.ListIterator;
-
-public class ForgeCommandExecutor extends BrigadierCommandExecutor<CommandSourceStack> {
+public class ForgeCommandExecutor extends BrigadierCommandExecutor<CommandSource> {
 
     private final LPForgePlugin plugin;
 
-    public ForgeCommandExecutor(LPForgePlugin plugin) {
+    public ForgeCommandExecutor(final LPForgePlugin plugin) {
         super(plugin);
         this.plugin = plugin;
     }
 
     @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        for (String alias : COMMAND_ALIASES) {
-            LiteralCommandNode<CommandSourceStack> command = Commands.literal(alias).executes(this).build();
-            ArgumentCommandNode<CommandSourceStack, String> argument = Commands.argument("args", StringArgumentType.greedyString())
-                    .suggests(this)
-                    .executes(this)
-                    .build();
+    public void onRegisterCommands(final RegisterCommandsEvent event) {
+        for (final String alias : COMMAND_ALIASES) {
+            final LiteralCommandNode<CommandSource> command =
+                    Commands.literal(alias).executes(this).build();
+            final ArgumentCommandNode<CommandSource, String> argument =
+                    Commands.argument("args", StringArgumentType.greedyString()).suggests(this)
+                            .executes(this).build();
 
             command.addChild(argument);
             event.getDispatcher().getRoot().addChild(command);
@@ -68,25 +65,28 @@ public class ForgeCommandExecutor extends BrigadierCommandExecutor<CommandSource
     }
 
     @Override
-    public Sender getSender(CommandSourceStack source) {
+    public Sender getSender(final CommandSource source) {
         return this.plugin.getSenderFactory().wrap(source);
     }
 
     @Override
-    public List<String> resolveSelectors(CommandSourceStack source, List<String> args) {
+    public List<String> resolveSelectors(final CommandSource source, final List<String> args) {
         // usage of @ selectors requires at least level 2 permission
-        CommandSourceStack atAllowedSource = source.hasPermission(2) ? source : source.withPermission(2);
-        for (ListIterator<String> it = args.listIterator(); it.hasNext(); ) {
-            String arg = it.next();
+        final CommandSource atAllowedSource = source.hasPermission(2) ? source : source.withPermission(2);
+        for (final ListIterator<String> it = args.listIterator(); it.hasNext(); ) {
+            final String arg = it.next();
             if (arg.isEmpty() || arg.charAt(0) != '@') {
                 continue;
             }
 
-            List<ServerPlayer> matchedPlayers;
+            final List<ServerPlayerEntity> matchedPlayers;
             try {
-                matchedPlayers = EntityArgument.entities().parse(new StringReader(arg)).findPlayers(atAllowedSource);
-            } catch (CommandSyntaxException e) {
-                this.plugin.getLogger().warn("Error parsing selector '" + arg + "' for " + source + " executing " + args, e);
+                matchedPlayers = EntityArgument.entities().parse(new StringReader(arg))
+                        .findPlayers(atAllowedSource);
+            } catch (final CommandSyntaxException e) {
+                this.plugin.getLogger()
+                        .warn("Error parsing selector '" + arg + "' for " + source + " executing "
+                                + args, e);
                 continue;
             }
 
@@ -95,12 +95,14 @@ public class ForgeCommandExecutor extends BrigadierCommandExecutor<CommandSource
             }
 
             if (matchedPlayers.size() > 1) {
-                this.plugin.getLogger().warn("Error parsing selector '" + arg + "' for " + source + " executing " + args +
-                        ": ambiguous result (more than one player matched) - " + matchedPlayers);
+                this.plugin.getLogger()
+                        .warn("Error parsing selector '" + arg + "' for " + source + " executing "
+                                + args + ": ambiguous result (more than one player matched) - "
+                                + matchedPlayers);
                 continue;
             }
 
-            ServerPlayer player = matchedPlayers.get(0);
+            final ServerPlayerEntity player = matchedPlayers.get(0);
             it.set(player.getStringUUID());
         }
 

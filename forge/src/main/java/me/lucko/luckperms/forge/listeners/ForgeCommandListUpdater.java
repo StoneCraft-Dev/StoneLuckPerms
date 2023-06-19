@@ -26,76 +26,75 @@
 package me.lucko.luckperms.forge.listeners;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
-
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import me.lucko.luckperms.common.api.implementation.ApiGroup;
 import me.lucko.luckperms.common.cache.BufferedRequest;
 import me.lucko.luckperms.common.event.LuckPermsEventListener;
 import me.lucko.luckperms.common.util.CaffeineFactory;
 import me.lucko.luckperms.forge.LPForgePlugin;
-
 import net.luckperms.api.event.EventBus;
 import net.luckperms.api.event.context.ContextUpdateEvent;
 import net.luckperms.api.event.group.GroupDataRecalculateEvent;
 import net.luckperms.api.event.user.UserDataRecalculateEvent;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Calls {@link net.minecraft.server.players.PlayerList#sendPlayerPermissionLevel(ServerPlayer)} when a players permissions change.
+ * Calls
+ * {@link net.minecraft.server.management.PlayerList#sendPlayerPermissionLevel(net.minecraft.entity.player.ServerPlayerEntity)} when a players permissions change.
  */
 public class ForgeCommandListUpdater implements LuckPermsEventListener {
     private final LPForgePlugin plugin;
-    private final LoadingCache<UUID, SendBuffer> sendingBuffers = CaffeineFactory.newBuilder()
-            .expireAfterAccess(10, TimeUnit.SECONDS)
-            .build(SendBuffer::new);
+    private final LoadingCache<UUID, SendBuffer> sendingBuffers =
+            CaffeineFactory.newBuilder().expireAfterAccess(10, TimeUnit.SECONDS)
+                    .build(SendBuffer::new);
 
-    public ForgeCommandListUpdater(LPForgePlugin plugin) {
+    public ForgeCommandListUpdater(final LPForgePlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void bind(EventBus bus) {
+    public void bind(final EventBus bus) {
         bus.subscribe(UserDataRecalculateEvent.class, this::onUserDataRecalculate);
         bus.subscribe(GroupDataRecalculateEvent.class, this::onGroupDataRecalculate);
         bus.subscribe(ContextUpdateEvent.class, this::onContextUpdate);
     }
 
-    private void onUserDataRecalculate(UserDataRecalculateEvent e) {
-        requestUpdate(e.getUser().getUniqueId());
+    private void onUserDataRecalculate(final UserDataRecalculateEvent e) {
+        this.requestUpdate(e.getUser().getUniqueId());
     }
 
-    private void onGroupDataRecalculate(GroupDataRecalculateEvent e) {
-        plugin.getUserManager().getAll().values().forEach(user -> {
-            if (user.resolveInheritanceTree(user.getQueryOptions()).contains(ApiGroup.cast(e.getGroup()))) {
-                requestUpdate(user.getUniqueId());
+    private void onGroupDataRecalculate(final GroupDataRecalculateEvent e) {
+        this.plugin.getUserManager().getAll().values().forEach(user -> {
+            if (user.resolveInheritanceTree(user.getQueryOptions())
+                    .contains(ApiGroup.cast(e.getGroup()))) {
+                this.requestUpdate(user.getUniqueId());
             }
         });
     }
 
-    private void onContextUpdate(ContextUpdateEvent e) {
-        e.getSubject(ServerPlayer.class).ifPresent(p -> requestUpdate(p.getUUID()));
+    private void onContextUpdate(final ContextUpdateEvent e) {
+        e.getSubject(ServerPlayerEntity.class).ifPresent(p -> this.requestUpdate(p.getUUID()));
     }
 
-    private void requestUpdate(UUID uniqueId) {
+    private void requestUpdate(final UUID uniqueId) {
         if (!this.plugin.getBootstrap().isPlayerOnline(uniqueId)) {
             return;
         }
 
         // Buffer the request to send a commands update.
-        SendBuffer sendBuffer = this.sendingBuffers.get(uniqueId);
+        final SendBuffer sendBuffer = this.sendingBuffers.get(uniqueId);
         if (sendBuffer != null) {
             sendBuffer.request();
         }
     }
 
     // Called when the buffer times out.
-    private void sendUpdate(UUID uniqueId) {
+    private void sendUpdate(final UUID uniqueId) {
         this.plugin.getBootstrap().getScheduler().sync().execute(() -> {
             this.plugin.getBootstrap().getPlayer(uniqueId).ifPresent(player -> {
-                MinecraftServer server = player.getServer();
+                final MinecraftServer server = player.getServer();
                 if (server != null) {
                     server.getPlayerList().sendPlayerPermissionLevel(player);
                 }
@@ -106,14 +105,15 @@ public class ForgeCommandListUpdater implements LuckPermsEventListener {
     private final class SendBuffer extends BufferedRequest<Void> {
         private final UUID uniqueId;
 
-        SendBuffer(UUID uniqueId) {
-            super(500, TimeUnit.MILLISECONDS, ForgeCommandListUpdater.this.plugin.getBootstrap().getScheduler());
+        SendBuffer(final UUID uniqueId) {
+            super(500, TimeUnit.MILLISECONDS,
+                    ForgeCommandListUpdater.this.plugin.getBootstrap().getScheduler());
             this.uniqueId = uniqueId;
         }
 
         @Override
         protected Void perform() {
-            sendUpdate(this.uniqueId);
+            ForgeCommandListUpdater.this.sendUpdate(this.uniqueId);
             return null;
         }
     }

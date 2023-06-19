@@ -25,131 +25,51 @@
 
 package me.lucko.luckperms.forge.service;
 
-import me.lucko.luckperms.common.cacheddata.type.MetaCache;
-import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
-import me.lucko.luckperms.common.context.ImmutableContextSetImpl;
-import me.lucko.luckperms.common.model.User;
-import me.lucko.luckperms.common.verbose.event.CheckOrigin;
-import me.lucko.luckperms.forge.LPForgeBootstrap;
-import me.lucko.luckperms.forge.LPForgePlugin;
-import me.lucko.luckperms.forge.capabilities.UserCapabilityImpl;
-
-import net.luckperms.api.context.ImmutableContextSet;
-import net.luckperms.api.query.QueryMode;
-import net.luckperms.api.query.QueryOptions;
-import net.luckperms.api.util.Tristate;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.server.permission.handler.IPermissionHandler;
-import net.minecraftforge.server.permission.nodes.PermissionDynamicContext;
-import net.minecraftforge.server.permission.nodes.PermissionNode;
-import net.minecraftforge.server.permission.nodes.PermissionTypes;
-
-import java.util.Collection;
-import java.util.Collections;
+import com.mojang.authlib.GameProfile;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
+import me.lucko.luckperms.forge.LPForgeBootstrap;
+import me.lucko.luckperms.forge.LPForgePlugin;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.server.permission.DefaultPermissionLevel;
+import net.minecraftforge.server.permission.IPermissionHandler;
+import net.minecraftforge.server.permission.context.IContext;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+// TODO: Check if this is even used.
 
 public class ForgePermissionHandler implements IPermissionHandler {
-    public static final ResourceLocation IDENTIFIER = new ResourceLocation(LPForgeBootstrap.ID, "permission_handler");
+    public static final ResourceLocation IDENTIFIER =
+            new ResourceLocation(LPForgeBootstrap.ID, "permission_handler");
 
     private final LPForgePlugin plugin;
-    private final Set<PermissionNode<?>> permissionNodes;
+    private final Set<String> permissionNodes = new HashSet<>();
 
-    public ForgePermissionHandler(LPForgePlugin plugin, Collection<PermissionNode<?>> permissionNodes) {
+    public ForgePermissionHandler(final LPForgePlugin plugin) {
         this.plugin = plugin;
-        this.permissionNodes = Collections.unmodifiableSet(new HashSet<>(permissionNodes));
-
-        for (PermissionNode<?> node : this.permissionNodes) {
-            this.plugin.getPermissionRegistry().insert(node.getNodeName());
-        }
     }
 
     @Override
-    public ResourceLocation getIdentifier() {
-        return IDENTIFIER;
+    public void registerNode(final String node, final DefaultPermissionLevel level,
+            final String desc) {
+        this.plugin.getPermissionRegistry().insert(node);
     }
 
     @Override
-    public Set<PermissionNode<?>> getRegisteredNodes() {
+    public @NotNull Set<String> getRegisteredNodes() {
         return this.permissionNodes;
     }
 
     @Override
-    public <T> T getPermission(ServerPlayer player, PermissionNode<T> node, PermissionDynamicContext<?>... context) {
-        UserCapabilityImpl capability = UserCapabilityImpl.getNullable(player);
-
-        if (capability != null) {
-            User user = capability.getUser();
-            QueryOptions queryOptions = capability.getQueryOptionsCache().getQueryOptions();
-
-            T value = getPermissionValue(user, queryOptions, node, context);
-            if (value != null) {
-                return value;
-            }
-        }
-
-        return node.getDefaultResolver().resolve(player, player.getUUID(), context);
+    public boolean hasPermission(final GameProfile profile, final String node,
+            @Nullable final IContext context) {
+        System.out.println("HAS PERMISSION???");
+        return false;
     }
 
     @Override
-    public <T> T getOfflinePermission(UUID player, PermissionNode<T> node, PermissionDynamicContext<?>... context) {
-        User user = this.plugin.getUserManager().getIfLoaded(player);
-
-        if (user != null) {
-            QueryOptions queryOptions = user.getQueryOptions();
-            T value = getPermissionValue(user, queryOptions, node, context);
-            if (value != null) {
-                return value;
-            }
-        }
-
-        return node.getDefaultResolver().resolve(null, player, context);
+    public @NotNull String getNodeDescription(final String node) {
+        return "";
     }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T getPermissionValue(User user, QueryOptions queryOptions, PermissionNode<T> node, PermissionDynamicContext<?>... context) {
-        queryOptions = appendContextToQueryOptions(queryOptions, context);
-
-        if (node.getType() == PermissionTypes.BOOLEAN) {
-            PermissionCache cache = user.getCachedData().getPermissionData(queryOptions);
-            Tristate value = cache.checkPermission(node.getNodeName(), CheckOrigin.PLATFORM_API_HAS_PERMISSION).result();
-            return (T) (Boolean) value.asBoolean();
-        }
-
-        if (node.getType() == PermissionTypes.INTEGER) {
-            MetaCache cache = user.getCachedData().getMetaData(queryOptions);
-            Integer value = cache.getMetaValue(node.getNodeName(), Integer::parseInt).orElse(null);
-            if (value != null) {
-                return (T) value;
-            }
-        }
-
-        if (node.getType() == PermissionTypes.STRING) {
-            MetaCache cache = user.getCachedData().getMetaData(queryOptions);
-            String value = cache.getMetaValue(node.getNodeName());
-            if (value != null) {
-                return (T) value;
-            }
-        }
-
-        return null;
-    }
-
-    private static QueryOptions appendContextToQueryOptions(QueryOptions queryOptions, PermissionDynamicContext<?>... context) {
-        if (context.length == 0 || queryOptions.mode() != QueryMode.CONTEXTUAL) {
-            return queryOptions;
-        }
-
-        ImmutableContextSet.Builder contextBuilder = new ImmutableContextSetImpl.BuilderImpl()
-                .addAll(queryOptions.context());
-
-        for (PermissionDynamicContext<?> dynamicContext : context) {
-            contextBuilder.add(dynamicContext.getDynamic().name(), dynamicContext.getSerializedValue());
-        }
-
-        return queryOptions.toBuilder().context(contextBuilder.build()).build();
-    }
-
 }
