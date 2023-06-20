@@ -33,9 +33,16 @@ import net.minecraft.network.NetworkManager;
 import net.minecraftforge.eventbus.api.Event;
 
 public class PlayerNegotiationEvent extends Event {
-    private final NetworkManager connection;
-    private final GameProfile profile;
-    private final List<Future<Void>> futures;
+
+    private NetworkManager connection;
+    private GameProfile profile;
+    private List<Future<Void>> futures;
+
+    /**
+     * Needed to compute listener list in
+     * {@link net.minecraftforge.eventbus.api.EventListenerHelper}
+     */
+    public PlayerNegotiationEvent() {}
 
     public PlayerNegotiationEvent(final NetworkManager connection, final GameProfile profile,
             final List<Future<Void>> futures) {

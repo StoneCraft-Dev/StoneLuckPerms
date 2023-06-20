@@ -9,7 +9,6 @@
     "MixinPlayerLoginNegotiation",
     "MixinServerLoginNetHandlerAccessor"
   ],
-  "client": [
-  ],
+  "client": [],
   "minVersion": "0.8"
 }

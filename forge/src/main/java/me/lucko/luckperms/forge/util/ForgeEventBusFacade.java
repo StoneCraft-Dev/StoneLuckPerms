@@ -59,8 +59,8 @@ public class ForgeEventBusFacade {
 
     private final List<ListenerRegistration> listeners = new ArrayList<>();
 
-    private static Consumer<?> createInvokerFunction(
-            final Method method, final Object target, final EventType type) {
+    private static Consumer<?> createInvokerFunction(final Method method, final Object target,
+            final EventType type) {
         // Use the 'LambdaMetafactory' to generate a consumer which can be passed directly to an
         // 'IEventBus'
         // when registering a listener, this reduces the overhead involved when reflectively
@@ -84,7 +84,7 @@ public class ForgeEventBusFacade {
         final Type[] parameterTypes = method.getGenericParameterTypes();
         if (parameterTypes.length != 1) {
             throw new IllegalArgumentException(
-                    "" + "Method " + method + " has @SubscribeEvent annotation. " + "It has "
+                    "Method " + method + " has @SubscribeEvent annotation. " + "It has "
                             + parameterTypes.length + " arguments, "
                             + "but event handler methods require a single argument only.");
         }
@@ -112,7 +112,7 @@ public class ForgeEventBusFacade {
             final Type[] typeArguments = parameterizedType.getActualTypeArguments();
             if (typeArguments.length != 1) {
                 throw new IllegalArgumentException(
-                        "" + "Method " + method + " has @SubscribeEvent annotation. " + "It has a "
+                        "Method " + method + " has @SubscribeEvent annotation. " + "It has a "
                                 + eventType + " argument, "
                                 + "but generic events require a single type argument only.");
             }
@@ -133,7 +133,7 @@ public class ForgeEventBusFacade {
         // Ensure 'genericType' is set if 'eventType' is a generic event
         if (GenericEvent.class.isAssignableFrom(eventType) && genericType == null) {
             throw new IllegalArgumentException(
-                    "" + "Method " + method + " has @SubscribeEvent annotation, "
+                    "Method " + method + " has @SubscribeEvent annotation, "
                             + "but the generic argument type cannot be determined for "
                             + "for the GenericEvent subtype: " + eventType);
         }
@@ -141,7 +141,7 @@ public class ForgeEventBusFacade {
         // Ensure 'eventType' is a subclass of event
         if (!Event.class.isAssignableFrom(eventType)) {
             throw new IllegalArgumentException(
-                    "" + "Method " + method + " has @SubscribeEvent annotation, "
+                    "Method " + method + " has @SubscribeEvent annotation, "
                             + "but takes an argument that is not an Event subtype: " + eventType);
         }
 
@@ -153,8 +153,8 @@ public class ForgeEventBusFacade {
      */
     @SuppressWarnings("unchecked")
     private static <T extends GenericEvent<? extends F>, F> void addGenericListener(
-            final IEventBus eventBus, final Class<?> genericClassFilter, final SubscribeEvent annotation,
-            final Class<?> eventType, final Consumer<?> consumer) {
+            final IEventBus eventBus, final Class<?> genericClassFilter,
+            final SubscribeEvent annotation, final Class<?> eventType, final Consumer<?> consumer) {
         eventBus.addGenericListener((Class<F>) genericClassFilter, annotation.priority(),
                 annotation.receiveCanceled(), (Class<T>) eventType, (Consumer<T>) consumer);
     }
@@ -163,8 +163,8 @@ public class ForgeEventBusFacade {
      * Handles casting generics for {@link IEventBus#addListener}.
      */
     @SuppressWarnings("unchecked")
-    private static <T extends Event> void addListener(final IEventBus eventBus, final SubscribeEvent annotation,
-            final Class<?> eventType, final Consumer<?> consumer) {
+    private static <T extends Event> void addListener(final IEventBus eventBus,
+            final SubscribeEvent annotation, final Class<?> eventType, final Consumer<?> consumer) {
         eventBus.addListener(annotation.priority(), annotation.receiveCanceled(),
                 (Class<T>) eventType, (Consumer<T>) consumer);
     }
@@ -252,8 +252,8 @@ public class ForgeEventBusFacade {
          */
         private final Object target;
 
-        private ListenerRegistration(
-                final Consumer<?> invoker, final IEventBus eventBus, final Object target) {
+        private ListenerRegistration(final Consumer<?> invoker, final IEventBus eventBus,
+                final Object target) {
             this.invoker = invoker;
             this.eventBus = eventBus;
             this.target = target;

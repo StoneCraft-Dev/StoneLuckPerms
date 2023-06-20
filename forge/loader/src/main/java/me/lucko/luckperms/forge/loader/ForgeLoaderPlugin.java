@@ -28,7 +28,6 @@ package me.lucko.luckperms.forge.loader;
 import java.util.function.Supplier;
 import me.lucko.luckperms.common.loader.JarInJarClassLoader;
 import me.lucko.luckperms.common.loader.LoaderBootstrap;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.ExtensionPoint;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
@@ -37,7 +36,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.network.FMLNetworkConstants;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -56,11 +54,9 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
     private LoaderBootstrap plugin;
 
     public ForgeLoaderPlugin() {
-        if (FMLLoader.getDist() == Dist.CLIENT) {
-            throw new IllegalStateException("This mod is server-side only!");
-        }
-
         this.container = ModList.get().getModContainerByObject(this).orElse(null);
+
+        markAsNotRequiredClientSide();
 
         if (FMLEnvironment.dist.isClient()) {
             LOGGER.info("Skipping LuckPerms init (not supported on the client!)");
