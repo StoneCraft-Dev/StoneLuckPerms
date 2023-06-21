@@ -23,7 +23,7 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.util;
+package me.lucko.luckperms.forge.loader;
 
 import com.mojang.authlib.GameProfile;
 import java.util.List;

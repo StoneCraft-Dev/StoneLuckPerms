@@ -27,9 +27,19 @@ package me.lucko.luckperms.forge.service;
 
 import com.mojang.authlib.GameProfile;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
+import me.lucko.luckperms.common.model.User;
+import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.forge.LPForgeBootstrap;
 import me.lucko.luckperms.forge.LPForgePlugin;
+import me.lucko.luckperms.forge.capabilities.UserCapabilityImpl;
+import net.luckperms.api.query.QueryOptions;
+import net.luckperms.api.util.Tristate;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.server.permission.DefaultPermissionLevel;
 import net.minecraftforge.server.permission.IPermissionHandler;
@@ -44,32 +54,84 @@ public class ForgePermissionHandler implements IPermissionHandler {
             new ResourceLocation(LPForgeBootstrap.ID, "permission_handler");
 
     private final LPForgePlugin plugin;
-    private final Set<String> permissionNodes = new HashSet<>();
+    private final Set<ForgePermissionNode> permissionNodes = new HashSet<>();
 
     public ForgePermissionHandler(final LPForgePlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void registerNode(final String node, final DefaultPermissionLevel level,
-            final String desc) {
+    public void registerNode(final @NotNull String node,
+            final @NotNull DefaultPermissionLevel level, final @NotNull String desc) {
         this.plugin.getPermissionRegistry().insert(node);
+        this.permissionNodes.add(new ForgePermissionNode(node, level, desc));
     }
 
     @Override
     public @NotNull Set<String> getRegisteredNodes() {
+        return this.permissionNodes.stream().map(ForgePermissionNode::getNode)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean hasPermission(final @NotNull GameProfile profile, final @NotNull String node,
+            @Nullable final IContext context) {
+        final Optional<ServerPlayerEntity> player =
+                this.plugin.getBootstrap().getPlayer(profile.getId());
+
+        return player.isPresent() ? this.getPermission(player.get(), node)
+                : this.getOfflinePermission(profile.getId(), node);
+    }
+
+    @Override
+    public @NotNull String getNodeDescription(final @NotNull String node) {
+        return this.permissionNodes.stream().map(ForgePermissionNode::getNode)
+                .filter(n -> n.equals(node)).findFirst().orElse("");
+    }
+
+    public ResourceLocation getIdentifier() {
+        return IDENTIFIER;
+    }
+
+    public Set<ForgePermissionNode> getRegisteredPermissionNodes() {
         return this.permissionNodes;
     }
 
-    @Override
-    public boolean hasPermission(final GameProfile profile, final String node,
-            @Nullable final IContext context) {
-        System.out.println("HAS PERMISSION???");
-        return false;
+    public Boolean getPermission(final ServerPlayerEntity player, final String node) {
+        final UserCapabilityImpl capability = UserCapabilityImpl.getNullable(player);
+
+        if (capability != null) {
+            final User user = capability.getUser();
+            final QueryOptions queryOptions = capability.getQueryOptionsCache().getQueryOptions();
+            final Boolean value = this.getPermissionValue(user, queryOptions, node);
+
+            if (value != null) {
+                return this.getPermissionValue(user, queryOptions, node);
+            }
+        }
+
+        return null;
     }
 
-    @Override
-    public @NotNull String getNodeDescription(final String node) {
-        return "";
+    public Boolean getOfflinePermission(final UUID player, final String node) {
+        final User user = this.plugin.getUserManager().getIfLoaded(player);
+
+        if (user != null) {
+            final QueryOptions queryOptions = user.getQueryOptions();
+
+            return this.getPermissionValue(user, queryOptions, node);
+        }
+
+        return null;
+    }
+
+    private Boolean getPermissionValue(final User user, final QueryOptions queryOptions,
+            final String key) {
+        // permission check
+        final PermissionCache cache = user.getCachedData().getPermissionData(queryOptions);
+        final Tristate value =
+                cache.checkPermission(key, CheckOrigin.PLATFORM_API_HAS_PERMISSION).result();
+
+        return value == Tristate.UNDEFINED ? null : value.asBoolean();
     }
 }

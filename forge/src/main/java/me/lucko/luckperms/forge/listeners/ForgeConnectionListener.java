@@ -36,7 +36,7 @@ import me.lucko.luckperms.common.plugin.util.AbstractConnectionListener;
 import me.lucko.luckperms.forge.ForgeSenderFactory;
 import me.lucko.luckperms.forge.LPForgePlugin;
 import me.lucko.luckperms.forge.capabilities.UserCapabilityImpl;
-import me.lucko.luckperms.forge.util.PlayerNegotiationEvent;
+import me.lucko.luckperms.forge.loader.PlayerNegotiationEvent;
 import net.kyori.adventure.text.Component;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -143,13 +143,16 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
                         + "before in this session.");
             }
 
-            final Component component =
-                    TranslationManager.render(Message.LOADING_STATE_ERROR.build(),
-                            player.getLanguage());
-            if (this.plugin.getConfiguration().get(ConfigKeys.CANCEL_FAILED_LOGINS)) {
-                player.connection.disconnect(ForgeSenderFactory.toNativeText(component));
-            } else {
-                player.sendMessage(ForgeSenderFactory.toNativeText(component), Util.NIL_UUID);
+            if (player.connection != null) {
+                final Component component =
+                        TranslationManager.render(Message.LOADING_STATE_ERROR.build(),
+                                player.getLanguage());
+
+                if (this.plugin.getConfiguration().get(ConfigKeys.CANCEL_FAILED_LOGINS)) {
+                    player.connection.disconnect(ForgeSenderFactory.toNativeText(component));
+                } else {
+                    player.sendMessage(ForgeSenderFactory.toNativeText(component), Util.NIL_UUID);
+                }
             }
         }
 

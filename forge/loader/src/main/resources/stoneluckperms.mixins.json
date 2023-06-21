@@ -1,11 +1,9 @@
 {
   "required": true,
-  "package": "me.lucko.luckperms.forge.mixins",
+  "package": "me.lucko.luckperms.forge.loader.mixins",
   "compatibilityLevel": "JAVA_11",
-  "refmap": "stone_essentials.refmap.json",
+  "refmap": "stoneluckperms.refmap.json",
   "mixins": [
-    "MixinFMLLoginWrapperInvoker",
-    "MixinFMLNetworkConstantsAccessor",
     "MixinPlayerLoginNegotiation",
     "MixinServerLoginNetHandlerAccessor"
   ],

@@ -26,6 +26,7 @@
 package me.lucko.luckperms.forge.capabilities;
 
 import java.lang.reflect.Field;
+import java.util.IdentityHashMap;
 import java.util.Locale;
 import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
 import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
@@ -99,7 +100,8 @@ public class UserCapabilityImpl implements UserCapability {
 
             field.setAccessible(true);
 
-            return (Capability<UserCapability>) field.get(CapabilityManager.INSTANCE);
+            return (Capability<UserCapability>) ((IdentityHashMap<String, Capability<?>>) field.get(
+                    CapabilityManager.INSTANCE)).get(UserCapability.class.getName().intern());
         } catch (final NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Could not get capability!");
         }

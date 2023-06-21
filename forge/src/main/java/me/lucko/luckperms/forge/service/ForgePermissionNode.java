@@ -23,19 +23,32 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.mixins;
+package me.lucko.luckperms.forge.service;
 
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.FMLLoginWrapper;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Invoker;
+import net.minecraftforge.server.permission.DefaultPermissionLevel;
 
-@Mixin(value = FMLLoginWrapper.class, remap = false)
-public interface MixinFMLLoginWrapperInvoker {
+public class ForgePermissionNode {
 
-    @Invoker("sendServerToClientLoginPacket")
-    void sendServerToClientLoginPacket(final ResourceLocation resourceLocation,
-            final PacketBuffer buffer, final int index, final NetworkManager manager);
+    private final String node;
+    private final DefaultPermissionLevel level;
+    private final String description;
+
+    public ForgePermissionNode(final String node, final DefaultPermissionLevel level,
+            final String description) {
+        this.node = node;
+        this.level = level;
+        this.description = description;
+    }
+
+    public String getNode() {
+        return this.node;
+    }
+
+    public DefaultPermissionLevel getLevel() {
+        return this.level;
+    }
+
+    public String getDescription() {
+        return this.description;
+    }
 }

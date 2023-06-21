@@ -2,17 +2,20 @@ buildscript {
     repositories {
         maven { url 'https://plugins.gradle.org/m2' }
         maven { url 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
     }
 
     dependencies {
         classpath 'gradle.plugin.com.github.johnrengelman:shadow:7.1.2'
         classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.+'
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
     }
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
 apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.spongepowered.mixin'
 
 sourceCompatibility = 1.8
 targetCompatibility = 11
@@ -21,11 +24,20 @@ minecraft {
     mappings channel: 'official', version: minecraftVersion
 }
 
+mixin {
+    add sourceSets.main, "stoneluckperms.refmap.json"
+
+    config "stoneluckperms.mixins.json"
+}
+
 repositories {
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
     implementation project(':api')
     implementation project(':common:loader-utils')
     implementation project(':forge:forge-api')

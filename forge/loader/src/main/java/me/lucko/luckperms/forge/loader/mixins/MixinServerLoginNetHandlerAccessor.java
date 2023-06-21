@@ -23,14 +23,14 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.mixins;
+package me.lucko.luckperms.forge.loader.mixins;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.login.ServerLoginNetHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(value = ServerLoginNetHandler.class, remap = false)
+@Mixin(value = ServerLoginNetHandler.class)
 public interface MixinServerLoginNetHandlerAccessor {
 
     @Accessor("gameProfile")
