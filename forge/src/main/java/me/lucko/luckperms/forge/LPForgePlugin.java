@@ -246,5 +246,4 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
     public ForgeContextManager getContextManager() {
         return this.contextManager;
     }
-
 }

@@ -6,11 +6,11 @@ issueTrackerURL = "https://github.com/LuckPerms/LuckPerms/issues"
 [[mods]]
 modId = "luckperms"
 version = "${version}"
-displayName = "LuckPerms"
+displayName = "StoneLuckPerms"
 displayURL = "https://luckperms.net/"
 logoFile = "luckperms.png"
 credits = "Luck"
-authors = "Luck"
+authors = "Luck, AlphaConqueror"
 description = "A permissions plugin for Minecraft servers."
 [[dependencies.luckperms]]
 modId = "forge"
