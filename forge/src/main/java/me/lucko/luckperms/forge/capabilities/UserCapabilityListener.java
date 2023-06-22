@@ -26,6 +26,7 @@
 package me.lucko.luckperms.forge.capabilities;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -42,8 +43,6 @@ import org.jetbrains.annotations.Nullable;
 
 public class UserCapabilityListener {
 
-    // TODO: Check if onRegisterCapabilities is needed
-
     @SubscribeEvent
     public void onAttachCapabilities(final AttachCapabilitiesEvent<Entity> event) {
         if (!(event.getObject() instanceof ServerPlayerEntity)) {
@@ -54,7 +53,6 @@ public class UserCapabilityListener {
                 new UserCapabilityProvider(new UserCapabilityImpl()));
     }
 
-    // TODO: Check
     @SubscribeEvent
     public void onPlayerClone(final PlayerEvent.Clone event) {
         if (!event.isWasDeath()) {
@@ -65,9 +63,13 @@ public class UserCapabilityListener {
         final PlayerEntity currentPlayer = event.getPlayer();
 
         try {
-            CapabilityProvider.class.getDeclaredMethod("reviveCaps").invoke(previousPlayer);
+            final Method method = CapabilityProvider.class.getDeclaredMethod("reviveCaps");
+
+            method.setAccessible(true);
+            method.invoke(previousPlayer);
         } catch (final NoSuchMethodException | InvocationTargetException |
                        IllegalAccessException e) {
+            e.printStackTrace();
             throw new UnsupportedOperationException("Could not revive caps of player.");
         }
 
@@ -79,7 +81,10 @@ public class UserCapabilityListener {
             current.getQueryOptionsCache().invalidate();
         } finally {
             try {
-                CapabilityProvider.class.getDeclaredMethod("invalidateCaps").invoke(previousPlayer);
+                final Method method = CapabilityProvider.class.getDeclaredMethod("invalidateCaps");
+
+                method.setAccessible(true);
+                method.invoke(previousPlayer);
             } catch (final NoSuchMethodException | InvocationTargetException |
                            IllegalAccessException ignored) {}
         }

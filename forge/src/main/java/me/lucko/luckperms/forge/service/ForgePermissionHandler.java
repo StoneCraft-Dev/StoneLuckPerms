@@ -47,8 +47,6 @@ import net.minecraftforge.server.permission.context.IContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-// TODO: Check if this is even used.
-
 public class ForgePermissionHandler implements IPermissionHandler {
     public static final ResourceLocation IDENTIFIER =
             new ResourceLocation(LPForgeBootstrap.ID, "permission_handler");
@@ -78,9 +76,10 @@ public class ForgePermissionHandler implements IPermissionHandler {
             @Nullable final IContext context) {
         final Optional<ServerPlayerEntity> player =
                 this.plugin.getBootstrap().getPlayer(profile.getId());
-
-        return player.isPresent() ? this.getPermission(player.get(), node)
+        final Boolean result = player.isPresent() ? this.getPermission(player.get(), node)
                 : this.getOfflinePermission(profile.getId(), node);
+
+        return result != null && result;
     }
 
     @Override

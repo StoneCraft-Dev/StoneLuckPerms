@@ -39,7 +39,6 @@ public class ForgePermissionHandlerListener {
         this.plugin = plugin;
     }
 
-    // TODO: Check if FMLLoadCompleteEvent works
     @SubscribeEvent
     public void onPermissionGatherHandler(final FMLLoadCompleteEvent event) {
         // Override the default permission handler with LuckPerms
