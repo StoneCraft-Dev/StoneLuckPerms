@@ -69,7 +69,6 @@ public class UserCapabilityListener {
             method.invoke(previousPlayer);
         } catch (final NoSuchMethodException | InvocationTargetException |
                        IllegalAccessException e) {
-            e.printStackTrace();
             throw new UnsupportedOperationException("Could not revive caps of player.");
         }
 
