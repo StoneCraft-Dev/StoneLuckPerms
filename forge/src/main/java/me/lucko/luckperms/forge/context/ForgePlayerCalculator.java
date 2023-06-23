@@ -41,7 +41,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.GameType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.ServerWorldInfo;
+import net.minecraft.world.storage.IServerWorldInfo;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -73,14 +73,15 @@ public class ForgePlayerCalculator implements ContextCalculator<ServerPlayerEnti
     }
 
     @Override
-    public void calculate(@NonNull final ServerPlayerEntity target, @NonNull final ContextConsumer consumer) {
+    public void calculate(@NonNull final ServerPlayerEntity target,
+            @NonNull final ContextConsumer consumer) {
         final ServerWorld level = target.getLevel();
         if (this.dimensionType) {
             consumer.accept(DefaultContextKeys.DIMENSION_TYPE_KEY,
                     getContextKey(level.dimension().location()));
         }
 
-        final ServerWorldInfo levelData = (ServerWorldInfo) level.getLevelData();
+        final IServerWorldInfo levelData = (IServerWorldInfo) level.getLevelData();
 
         if (this.world) {
             this.plugin.getConfiguration().get(ConfigKeys.WORLD_REWRITES)
@@ -120,7 +121,7 @@ public class ForgePlayerCalculator implements ContextCalculator<ServerPlayerEnti
 
         if (this.world && server != null) {
             for (final ServerWorld level : server.getAllLevels()) {
-                final ServerWorldInfo levelData = (ServerWorldInfo) level.getLevelData();
+                final IServerWorldInfo levelData = (IServerWorldInfo) level.getLevelData();
                 if (Context.isValidValue(levelData.getLevelName())) {
                     builder.add(DefaultContextKeys.WORLD_KEY, levelData.getLevelName());
                 }

@@ -26,6 +26,8 @@
 package me.lucko.luckperms.forge.capabilities;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.IdentityHashMap;
 import java.util.Locale;
 import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
@@ -42,6 +44,8 @@ import net.minecraft.nbt.INBT;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.common.capabilities.CapabilityProvider;
+import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +55,21 @@ public class UserCapabilityImpl implements UserCapability {
      * The capability instance.
      */
     public static final Capability<UserCapability> CAPABILITY = getCapability();
+    public static final Method REVIVE_CAPS;
+    public static final Method INVALIDATE_CAPS;
+
+    static {
+        try {
+            REVIVE_CAPS = CapabilityProvider.class.getDeclaredMethod("reviveCaps");
+            REVIVE_CAPS.setAccessible(true);
+
+            INVALIDATE_CAPS = CapabilityProvider.class.getDeclaredMethod("invalidateCaps");
+            INVALIDATE_CAPS.setAccessible(true);
+        } catch (final NoSuchMethodException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
     private boolean initialised = false;
     private User user;
     private QueryOptionsCache<ServerPlayerEntity> queryOptionsCache;
@@ -59,6 +78,25 @@ public class UserCapabilityImpl implements UserCapability {
 
     public UserCapabilityImpl() {}
 
+    private static LazyOptional<UserCapability> getCapability(final PlayerEntity player) {
+        if (player.isAlive()) {
+            return player.getCapability(CAPABILITY);
+        } else {
+            try {
+                REVIVE_CAPS.invoke(player);
+            } catch (final IllegalAccessException | InvocationTargetException e) {
+                throw new UnsupportedOperationException("Could not revive caps of player.");
+            }
+            try {
+                return player.getCapability(CAPABILITY);
+            } finally {
+                try {
+                    INVALIDATE_CAPS.invoke(player);
+                } catch (final IllegalAccessException | InvocationTargetException ignored) {}
+            }
+        }
+    }
+
     /**
      * Gets a {@link UserCapability} for a given {@link ServerPlayerEntity}.
      *
@@ -66,7 +104,7 @@ public class UserCapabilityImpl implements UserCapability {
      * @return the capability
      */
     public static @NotNull UserCapabilityImpl get(@NotNull final PlayerEntity player) {
-        return (UserCapabilityImpl) player.getCapability(CAPABILITY).orElseThrow(
+        return (UserCapabilityImpl) getCapability(player).orElseThrow(
                 () -> new IllegalStateException("Capability missing for " + player.getUUID()));
     }
 
@@ -78,7 +116,7 @@ public class UserCapabilityImpl implements UserCapability {
      */
     public static @Nullable UserCapabilityImpl getNullable(
             @NotNull final ServerPlayerEntity player) {
-        return (UserCapabilityImpl) player.getCapability(CAPABILITY).resolve().orElse(null);
+        return (UserCapabilityImpl) getCapability(player).resolve().orElse(null);
     }
 
     private static Capability<UserCapability> getCapability() {

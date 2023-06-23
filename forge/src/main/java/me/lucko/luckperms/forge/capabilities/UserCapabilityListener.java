@@ -26,13 +26,11 @@
 package me.lucko.luckperms.forge.capabilities;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityProvider;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -63,12 +61,8 @@ public class UserCapabilityListener {
         final PlayerEntity currentPlayer = event.getPlayer();
 
         try {
-            final Method method = CapabilityProvider.class.getDeclaredMethod("reviveCaps");
-
-            method.setAccessible(true);
-            method.invoke(previousPlayer);
-        } catch (final NoSuchMethodException | InvocationTargetException |
-                       IllegalAccessException e) {
+            UserCapabilityImpl.REVIVE_CAPS.invoke(previousPlayer);
+        } catch (final InvocationTargetException | IllegalAccessException e) {
             throw new UnsupportedOperationException("Could not revive caps of player.");
         }
 
@@ -80,12 +74,8 @@ public class UserCapabilityListener {
             current.getQueryOptionsCache().invalidate();
         } finally {
             try {
-                final Method method = CapabilityProvider.class.getDeclaredMethod("invalidateCaps");
-
-                method.setAccessible(true);
-                method.invoke(previousPlayer);
-            } catch (final NoSuchMethodException | InvocationTargetException |
-                           IllegalAccessException ignored) {}
+                UserCapabilityImpl.INVALIDATE_CAPS.invoke(previousPlayer);
+            } catch (final InvocationTargetException | IllegalAccessException ignored) {}
         }
     }
 
