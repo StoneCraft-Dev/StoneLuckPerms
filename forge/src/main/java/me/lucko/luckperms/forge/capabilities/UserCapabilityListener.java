@@ -25,72 +25,25 @@
 
 package me.lucko.luckperms.forge.capabilities;
 
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class UserCapabilityListener {
 
     @SubscribeEvent
-    public void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-        event.register(UserCapabilityImpl.class);
-    }
+    public void onPlayerClone(final PlayerEvent.Clone event) {
+        final EntityPlayer previousPlayer = event.original;
+        final EntityPlayer currentPlayer = event.entityPlayer;
 
-    @SubscribeEvent
-    public void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        if (!(event.getObject() instanceof ServerPlayer)) {
-            return;
-        }
-
-        event.addCapability(UserCapability.IDENTIFIER, new UserCapabilityProvider(new UserCapabilityImpl()));
-    }
-
-    @SubscribeEvent
-    public void onPlayerClone(PlayerEvent.Clone event) {
-        Player previousPlayer = event.getOriginal();
-        Player currentPlayer = event.getEntity();
-
-        previousPlayer.reviveCaps();
         try {
-            UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);
-            UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
+            final UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);
+            final UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
 
             current.initialise(previous);
             current.getQueryOptionsCache().invalidate();
-        } catch (IllegalStateException e) {
+        } catch (final IllegalStateException e) {
             // continue on if we cannot copy original data
-        } finally {
-            previousPlayer.invalidateCaps();
         }
     }
-
-    private static final class UserCapabilityProvider implements ICapabilityProvider {
-        private final UserCapabilityImpl userCapability;
-
-        private UserCapabilityProvider(UserCapabilityImpl userCapability) {
-            this.userCapability = userCapability;
-        }
-
-        @SuppressWarnings("unchecked")
-        @NotNull
-        @Override
-        public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-            if (cap != UserCapability.CAPABILITY) {
-                return LazyOptional.empty();
-            }
-
-            return LazyOptional.of(() -> (T) this.userCapability);
-        }
-    }
-
 }

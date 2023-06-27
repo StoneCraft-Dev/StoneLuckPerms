@@ -23,31 +23,38 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge;
+package me.lucko.luckperms.forge.events;
 
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
-import me.lucko.luckperms.common.api.LuckPermsApiProvider;
-import me.lucko.luckperms.common.event.AbstractEventBus;
-import me.lucko.luckperms.common.plugin.LuckPermsPlugin;
+import cpw.mods.fml.common.eventhandler.Cancelable;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.WorldSettings;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 
-public class ForgeEventBus extends AbstractEventBus<ModContainer> {
-    public ForgeEventBus(final LuckPermsPlugin plugin, final LuckPermsApiProvider apiProvider) {
-        super(plugin, apiProvider);
+@Cancelable
+public class PlayerChangeGameModeEvent extends PlayerEvent {
+    private final WorldSettings.GameType currentGameMode;
+    private WorldSettings.GameType newGameMode;
+
+    public PlayerChangeGameModeEvent(final EntityPlayer player,
+            final WorldSettings.GameType currentGameMode,
+            final WorldSettings.GameType newGameMode) {
+        super(player);
+        this.currentGameMode = currentGameMode;
+        this.newGameMode = newGameMode;
     }
 
-    @Override
-    protected ModContainer checkPlugin(final Object mod) throws IllegalArgumentException {
-        final ModContainer modContainer =
-                Loader.instance().getModList().stream().filter(m -> m == mod).findFirst()
-                        .orElse(null);
-
-        if (modContainer != null) {
-            return modContainer;
-        }
-
-        throw new IllegalArgumentException(
-                "Object " + mod + " (" + mod.getClass().getName() + ") is not a ModContainer.");
+    public WorldSettings.GameType getCurrentGameMode() {
+        return this.currentGameMode;
     }
 
+    public WorldSettings.GameType getNewGameMode() {
+        return this.newGameMode;
+    }
+
+    /**
+     * Sets the game mode the player will be changed to if this event is not cancelled.
+     */
+    public void setNewGameMode(final WorldSettings.GameType newGameMode) {
+        this.newGameMode = newGameMode;
+    }
 }

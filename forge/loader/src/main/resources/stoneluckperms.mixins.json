@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "me.lucko.luckperms.forge.loader.mixins",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "stoneluckperms.refmap.json",
+  "mixins": [
+    "MixinPlayerChangeGameMode",
+    "MixinPlayerLoginNegotiation"
+  ],
+  "client": []
+}

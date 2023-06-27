@@ -25,21 +25,20 @@
 
 package me.lucko.luckperms.forge;
 
+import java.nio.file.Path;
 import me.lucko.luckperms.common.config.generic.adapter.ConfigurateConfigAdapter;
 import me.lucko.luckperms.common.plugin.LuckPermsPlugin;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 
-import java.nio.file.Path;
-
 public class ForgeConfigAdapter extends ConfigurateConfigAdapter {
-    public ForgeConfigAdapter(LuckPermsPlugin plugin, Path path) {
+    public ForgeConfigAdapter(final LuckPermsPlugin plugin, final Path path) {
         super(plugin, path);
     }
 
     @Override
-    protected ConfigurationLoader<? extends ConfigurationNode> createLoader(Path path) {
+    protected ConfigurationLoader<? extends ConfigurationNode> createLoader(final Path path) {
         return HoconConfigurationLoader.builder().setPath(path).build();
     }
 

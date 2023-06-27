@@ -25,6 +25,11 @@
 
 package me.lucko.luckperms.forge;
 
+import cpw.mods.fml.common.ModContainer;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import me.lucko.luckperms.common.api.LuckPermsApiProvider;
 import me.lucko.luckperms.common.calculator.CalculatorFactory;
 import me.lucko.luckperms.common.config.ConfigKeys;
@@ -45,29 +50,22 @@ import me.lucko.luckperms.forge.capabilities.UserCapabilityListener;
 import me.lucko.luckperms.forge.context.ForgeContextManager;
 import me.lucko.luckperms.forge.context.ForgePlayerCalculator;
 import me.lucko.luckperms.forge.listeners.ForgeAutoOpListener;
-import me.lucko.luckperms.forge.listeners.ForgeCommandListUpdater;
 import me.lucko.luckperms.forge.listeners.ForgeConnectionListener;
 import me.lucko.luckperms.forge.listeners.ForgePlatformListener;
 import me.lucko.luckperms.forge.messaging.ForgeMessagingFactory;
-import me.lucko.luckperms.forge.service.ForgePermissionHandlerListener;
+import me.lucko.luckperms.forge.util.ForgeEventBusFacade;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.query.QueryOptions;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.players.PlayerList;
-import net.minecraftforge.fml.ModContainer;
-
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
+import net.minecraft.entity.player.EntityPlayerMP;
 
 /**
  * LuckPerms implementation for Forge.
  */
 public class LPForgePlugin extends AbstractLuckPermsPlugin {
-    private final LPForgeBootstrap bootstrap;
 
+    private final LPForgeBootstrap bootstrap;
     private ForgeSenderFactory senderFactory;
     private ForgeConnectionListener connectionListener;
     private ForgeCommandExecutor commandManager;
@@ -76,7 +74,7 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
     private StandardTrackManager trackManager;
     private ForgeContextManager contextManager;
 
-    public LPForgePlugin(LPForgeBootstrap bootstrap) {
+    public LPForgePlugin(final LPForgeBootstrap bootstrap) {
         this.bootstrap = bootstrap;
     }
 
@@ -87,19 +85,17 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
 
     protected void registerEarlyListeners() {
         this.connectionListener = new ForgeConnectionListener(this);
-        this.bootstrap.registerListeners(this.connectionListener);
+        this.bootstrap.registerListeners(this.connectionListener,
+                ForgeEventBusFacade.EventBusType.BOTH);
 
-        ForgePlatformListener platformListener = new ForgePlatformListener(this);
-        this.bootstrap.registerListeners(platformListener);
+        final ForgePlatformListener platformListener = new ForgePlatformListener(this);
+        this.bootstrap.registerListeners(platformListener, ForgeEventBusFacade.EventBusType.BOTH);
 
-        UserCapabilityListener userCapabilityListener = new UserCapabilityListener();
-        this.bootstrap.registerListeners(userCapabilityListener);
-
-        ForgePermissionHandlerListener permissionHandlerListener = new ForgePermissionHandlerListener(this);
-        this.bootstrap.registerListeners(permissionHandlerListener);
+        final UserCapabilityListener userCapabilityListener = new UserCapabilityListener();
+        this.bootstrap.registerListeners(userCapabilityListener,
+                ForgeEventBusFacade.EventBusType.MC);
 
         this.commandManager = new ForgeCommandExecutor(this);
-        this.bootstrap.registerListeners(this.commandManager);
     }
 
     @Override
@@ -109,7 +105,7 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
 
     @Override
     protected Set<Dependency> getGlobalDependencies() {
-        Set<Dependency> dependencies = super.getGlobalDependencies();
+        final Set<Dependency> dependencies = super.getGlobalDependencies();
         dependencies.add(Dependency.CONFIGURATE_CORE);
         dependencies.add(Dependency.CONFIGURATE_HOCON);
         dependencies.add(Dependency.HOCON_CONFIG);
@@ -118,7 +114,7 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
 
     @Override
     protected ConfigurationAdapter provideConfigurationAdapter() {
-        return new ForgeConfigAdapter(this, resolveConfig("luckperms.conf"));
+        return new ForgeConfigAdapter(this, this.resolveConfig("luckperms.conf"));
     }
 
     @Override
@@ -152,8 +148,9 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
     protected void setupContextManager() {
         this.contextManager = new ForgeContextManager(this);
 
-        ForgePlayerCalculator playerCalculator = new ForgePlayerCalculator(this, getConfiguration().get(ConfigKeys.DISABLED_CONTEXTS));
-        this.bootstrap.registerListeners(playerCalculator);
+        final ForgePlayerCalculator playerCalculator = new ForgePlayerCalculator(this,
+                this.getConfiguration().get(ConfigKeys.DISABLED_CONTEXTS));
+        this.bootstrap.registerListeners(playerCalculator, ForgeEventBusFacade.EventBusType.BOTH);
         this.contextManager.registerCalculator(playerCalculator);
     }
 
@@ -162,51 +159,46 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
     }
 
     @Override
-    protected AbstractEventBus<ModContainer> provideEventBus(LuckPermsApiProvider provider) {
+    protected AbstractEventBus<ModContainer> provideEventBus(final LuckPermsApiProvider provider) {
         return new ForgeEventBus(this, provider);
     }
 
     @Override
-    protected void registerApiOnPlatform(LuckPerms api) {
+    protected void registerApiOnPlatform(final LuckPerms api) {
     }
 
     @Override
     protected void performFinalSetup() {
         // register autoop listener
-        if (getConfiguration().get(ConfigKeys.AUTO_OP)) {
-            getApiProvider().getEventBus().subscribe(new ForgeAutoOpListener(this));
-        }
-
-        // register forge command list updater
-        if (getConfiguration().get(ConfigKeys.UPDATE_CLIENT_COMMAND_LIST)) {
-            getApiProvider().getEventBus().subscribe(new ForgeCommandListUpdater(this));
+        if (this.getConfiguration().get(ConfigKeys.AUTO_OP)) {
+            this.getApiProvider().getEventBus().subscribe(new ForgeAutoOpListener(this));
         }
     }
 
     @Override
-    public Optional<QueryOptions> getQueryOptionsForUser(User user) {
-        return this.bootstrap.getPlayer(user.getUniqueId()).map(player -> this.contextManager.getQueryOptions(player));
+    public Optional<QueryOptions> getQueryOptionsForUser(final User user) {
+        return this.bootstrap.getPlayer(user.getUniqueId())
+                .map(player -> this.contextManager.getQueryOptions(player));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Stream<Sender> getOnlineSenders() {
-        return Stream.concat(
-                Stream.of(getConsoleSender()),
-                this.bootstrap.getServer()
-                        .map(MinecraftServer::getPlayerList)
-                        .map(PlayerList::getPlayers)
-                        .map(players -> players.stream().map(player -> this.senderFactory.wrap(player.createCommandSourceStack()))).orElseGet(Stream::empty)
-        );
+        return Stream.concat(Stream.of(this.getConsoleSender()), this.bootstrap.getServer()
+                .map(minecraftServer -> (List<EntityPlayerMP>) minecraftServer.getConfigurationManager().playerEntityList)
+                .map(players -> players.stream().map(player -> this.senderFactory.wrap(player)))
+                .orElseGet(Stream::empty));
     }
 
     @Override
     public Sender getConsoleSender() {
-        return this.bootstrap.getServer()
-                .map(server -> this.senderFactory.wrap(server.createCommandSourceStack()))
+        return this.bootstrap.getServer().map(server -> this.senderFactory.wrap(server))
                 .orElseGet(() -> new DummyConsoleSender(this) {
                     @Override
-                    public void sendMessage(Component message) {
-                        LPForgePlugin.this.bootstrap.getPluginLogger().info(PlainTextComponentSerializer.plainText().serialize(TranslationManager.render(message)));
+                    public void sendMessage(final Component message) {
+                        LPForgePlugin.this.bootstrap.getPluginLogger()
+                                .info(PlainTextComponentSerializer.plainText()
+                                        .serialize(TranslationManager.render(message)));
                     }
                 });
     }

@@ -1,22 +1,50 @@
-plugins {
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id 'java-library'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+buildscript {
+    repositories {
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    }
+
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.4-SNAPSHOT'
+    }
 }
 
+plugins {
+    id 'java'
+}
+
+apply plugin: 'maven'
+apply plugin: 'forge'
+apply plugin: 'com.github.johnrengelman.shadow'
+
 sourceCompatibility = 1.8
-targetCompatibility = 17
+targetCompatibility = 1.8
 
 minecraft {
-    mappings channel: 'official', version: minecraftVersion
+    version = "${minecraftVersion}-${forgeVersion}"
+    mappings = "stable_12"
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url 'https://repo.spongepowered.org/maven/'
+    }
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"
     implementation project(':api')
     implementation project(':common:loader-utils')
     implementation project(':forge:forge-api')
+
+    implementation("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+    }
 }
+
+ext.mixinSrg = new File(project.buildDir, "resources/main/stoneluckperms.mixins.json")
+ext.mixinRefMap = new File(project.buildDir, "resources/main/stoneluckperms.refmap.json")
 
 build {
     dependsOn(":forge:build")
@@ -38,7 +66,7 @@ jar {
 }
 
 processResources {
-    filesMatching('META-INF/mods.toml') {
+    filesMatching('mcmod.info') {
         expand 'version': project.ext.fullVersion
     }
 }

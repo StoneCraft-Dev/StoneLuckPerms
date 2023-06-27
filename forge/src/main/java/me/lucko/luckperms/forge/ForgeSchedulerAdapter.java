@@ -25,21 +25,25 @@
 
 package me.lucko.luckperms.forge;
 
-import me.lucko.luckperms.common.plugin.scheduler.AbstractJavaScheduler;
-
 import java.util.concurrent.Executor;
+import me.lucko.luckperms.common.plugin.scheduler.AbstractJavaScheduler;
 
 public class ForgeSchedulerAdapter extends AbstractJavaScheduler {
     private final Executor sync;
 
-    public ForgeSchedulerAdapter(LPForgeBootstrap bootstrap) {
+    public ForgeSchedulerAdapter(final LPForgeBootstrap bootstrap) {
         super(bootstrap);
-        this.sync = r -> bootstrap.getServer().orElseThrow(() -> new IllegalStateException("Server not ready")).executeBlocking(r);
+        this.sync = r -> {
+            if (!bootstrap.getServer().isPresent()) {
+                throw new IllegalStateException("Server not ready");
+            }
+
+            r.run();
+        };
     }
 
     @Override
     public Executor sync() {
         return this.sync;
     }
-
 }

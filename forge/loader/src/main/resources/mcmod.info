@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "luckperms",
+    "name": "StoneLuckPerms",
+    "description": "A permissions plugin for Minecraft servers.",
+    "mcversion": "1.7.10",
+    "version": "${version}",
+    "url": "https://luckperms.net/",
+    "authors": [
+      "Luck",
+      "AlphaConqueror"
+    ],
+    "credits": "Luck",
+    "logoFile": "luckperms.png"
+  }
+]

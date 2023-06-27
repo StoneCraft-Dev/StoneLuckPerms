@@ -25,69 +25,60 @@
 
 package me.lucko.luckperms.forge.capabilities;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
 import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
-import me.lucko.luckperms.common.locale.TranslationManager;
 import me.lucko.luckperms.common.model.User;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.forge.context.ForgeContextManager;
+import me.lucko.luckperms.forge.util.LazyOptional;
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.util.LazyOptional;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
-
 public class UserCapabilityImpl implements UserCapability {
 
-    private static LazyOptional<UserCapability> getCapability(Player player) {
-        if (!player.isRemoved()) {
-            return player.getCapability(CAPABILITY);
-        } else {
-            player.reviveCaps();
-            try {
-                return player.getCapability(CAPABILITY);
-            } finally {
-                player.invalidateCaps();
-            }
-        }
+    public static final Map<UUID, UserCapability> CAPABILITIES = new HashMap<>();
+    private boolean initialised = false;
+    private User user;
+    private QueryOptionsCache<EntityPlayerMP> queryOptionsCache;
+    private String language;
+    private Locale locale;
+
+    public UserCapabilityImpl() {}
+
+    private static LazyOptional<UserCapability> getCapability(final EntityPlayer player) {
+        return LazyOptional.of(() -> CAPABILITIES.get(player.getUniqueID()));
     }
 
     /**
-     * Gets a {@link UserCapability} for a given {@link ServerPlayer}.
+     * Gets a {@link UserCapability} for a given {@link EntityPlayer}.
      *
      * @param player the player
      * @return the capability
      */
-    public static @NotNull UserCapabilityImpl get(@NotNull Player player) {
-        return (UserCapabilityImpl) getCapability(player).orElseThrow(() -> new IllegalStateException("Capability missing for " + player.getUUID()));
+    public static @NotNull UserCapabilityImpl get(@NotNull final EntityPlayer player) {
+        return (UserCapabilityImpl) getCapability(player).orElseThrow(
+                () -> new IllegalStateException("Capability missing for " + player.getUniqueID()));
     }
 
     /**
-     * Gets a {@link UserCapability} for a given {@link ServerPlayer}.
+     * Gets a {@link UserCapability} for a given {@link EntityPlayer}.
      *
      * @param player the player
      * @return the capability, or null
      */
-    public static @Nullable UserCapabilityImpl getNullable(@NotNull Player player) {
+    public static @Nullable UserCapabilityImpl getNullable(@NotNull final EntityPlayer player) {
         return (UserCapabilityImpl) getCapability(player).resolve().orElse(null);
     }
 
-    private boolean initialised = false;
-
-    private User user;
-    private QueryOptionsCache<ServerPlayer> queryOptionsCache;
-    private String language;
-    private Locale locale;
-
-    public UserCapabilityImpl() {
-
-    }
-
-    public void initialise(UserCapabilityImpl previous) {
+    public void initialise(final UserCapabilityImpl previous) {
         this.user = previous.user;
         this.queryOptionsCache = previous.queryOptionsCache;
         this.language = previous.language;
@@ -95,7 +86,8 @@ public class UserCapabilityImpl implements UserCapability {
         this.initialised = true;
     }
 
-    public void initialise(User user, ServerPlayer player, ForgeContextManager contextManager) {
+    public void initialise(final User user, final EntityPlayerMP player,
+            final ForgeContextManager contextManager) {
         this.user = user;
         this.queryOptionsCache = new QueryOptionsCache<>(player, contextManager);
         this.initialised = true;
@@ -108,19 +100,19 @@ public class UserCapabilityImpl implements UserCapability {
     }
 
     @Override
-    public Tristate checkPermission(String permission) {
-        assertInitialised();
+    public Tristate checkPermission(final String permission) {
+        this.assertInitialised();
 
         if (permission == null) {
             throw new NullPointerException("permission");
         }
 
-        return checkPermission(permission, this.queryOptionsCache.getQueryOptions());
+        return this.checkPermission(permission, this.queryOptionsCache.getQueryOptions());
     }
 
     @Override
-    public Tristate checkPermission(String permission, QueryOptions queryOptions) {
-        assertInitialised();
+    public Tristate checkPermission(final String permission, final QueryOptions queryOptions) {
+        this.assertInitialised();
 
         if (permission == null) {
             throw new NullPointerException("permission");
@@ -130,31 +122,26 @@ public class UserCapabilityImpl implements UserCapability {
             throw new NullPointerException("queryOptions");
         }
 
-        PermissionCache cache = this.user.getCachedData().getPermissionData(queryOptions);
+        final PermissionCache cache = this.user.getCachedData().getPermissionData(queryOptions);
         return cache.checkPermission(permission, CheckOrigin.PLATFORM_API_HAS_PERMISSION).result();
     }
 
     public User getUser() {
-        assertInitialised();
+        this.assertInitialised();
         return this.user;
     }
 
     @Override
     public QueryOptions getQueryOptions() {
-        return getQueryOptionsCache().getQueryOptions();
+        return this.getQueryOptionsCache().getQueryOptions();
     }
 
-    public QueryOptionsCache<ServerPlayer> getQueryOptionsCache() {
-        assertInitialised();
+    public QueryOptionsCache<EntityPlayerMP> getQueryOptionsCache() {
+        this.assertInitialised();
         return this.queryOptionsCache;
     }
 
-    public Locale getLocale(ServerPlayer player) {
-        if (this.language == null || !this.language.equals(player.getLanguage())) {
-            this.language = player.getLanguage();
-            this.locale = TranslationManager.parseLocale(this.language);
-        }
-
+    public Locale getLocale(final EntityPlayerMP player) {
         return this.locale;
     }
 }

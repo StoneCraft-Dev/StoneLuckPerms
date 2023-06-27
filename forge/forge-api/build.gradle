@@ -1,15 +1,18 @@
 plugins {
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'java'
 }
 
+apply plugin: 'maven'
+apply plugin: 'forge'
+
 sourceCompatibility = 1.8
-targetCompatibility = 17
+targetCompatibility = 1.8
 
 minecraft {
-    mappings channel: 'official', version: minecraftVersion
+    version = "${minecraftVersion}-${forgeVersion}"
+    mappings = "stable_12"
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"
     implementation project(':api')
 }

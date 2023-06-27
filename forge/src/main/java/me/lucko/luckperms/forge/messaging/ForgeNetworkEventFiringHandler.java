@@ -23,31 +23,35 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge;
+package me.lucko.luckperms.forge.messaging;
 
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
-import me.lucko.luckperms.common.api.LuckPermsApiProvider;
-import me.lucko.luckperms.common.event.AbstractEventBus;
-import me.lucko.luckperms.common.plugin.LuckPermsPlugin;
+import cpw.mods.fml.common.FMLLog;
+import cpw.mods.fml.common.network.internal.FMLProxyPacket;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import org.apache.logging.log4j.Level;
 
-public class ForgeEventBus extends AbstractEventBus<ModContainer> {
-    public ForgeEventBus(final LuckPermsPlugin plugin, final LuckPermsApiProvider apiProvider) {
-        super(plugin, apiProvider);
+public class ForgeNetworkEventFiringHandler extends SimpleChannelInboundHandler<FMLProxyPacket> {
+    private final ForgeEventChannel eventChannel;
+
+    public ForgeNetworkEventFiringHandler(final ForgeEventChannel forgeEventChannel) {
+        this.eventChannel = forgeEventChannel;
     }
 
     @Override
-    protected ModContainer checkPlugin(final Object mod) throws IllegalArgumentException {
-        final ModContainer modContainer =
-                Loader.instance().getModList().stream().filter(m -> m == mod).findFirst()
-                        .orElse(null);
-
-        if (modContainer != null) {
-            return modContainer;
-        }
-
-        throw new IllegalArgumentException(
-                "Object " + mod + " (" + mod.getClass().getName() + ") is not a ModContainer.");
+    protected void channelRead0(final ChannelHandlerContext ctx, final FMLProxyPacket msg) {
+        this.eventChannel.fireRead(msg, ctx);
     }
 
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        this.eventChannel.fireUserEvent(evt, ctx);
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause)
+            throws Exception {
+        FMLLog.log(Level.ERROR, cause, "ForgeNetworkEventFiringHandler exception");
+        super.exceptionCaught(ctx, cause);
+    }
 }

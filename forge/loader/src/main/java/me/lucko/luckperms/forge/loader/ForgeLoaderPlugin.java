@@ -25,47 +25,32 @@
 
 package me.lucko.luckperms.forge.loader;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import java.util.function.Supplier;
 import me.lucko.luckperms.common.loader.JarInJarClassLoader;
 import me.lucko.luckperms.common.loader.LoaderBootstrap;
-import net.minecraftforge.fml.IExtensionPoint;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.NetworkConstants;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.function.Supplier;
-
-@Mod(value = "luckperms")
+@Mod(modid = "luckperms", acceptableRemoteVersions = "*")
 public class ForgeLoaderPlugin implements Supplier<ModContainer> {
-    private static final Logger LOGGER = LogManager.getLogger("luckperms");
 
     private static final String JAR_NAME = "luckperms-forge.jarinjar";
     private static final String BOOTSTRAP_CLASS = "me.lucko.luckperms.forge.LPForgeBootstrap";
 
     private final ModContainer container;
 
-    private JarInJarClassLoader loader;
+    private final JarInJarClassLoader loader;
     private LoaderBootstrap plugin;
 
     public ForgeLoaderPlugin() {
-        this.container = ModList.get().getModContainerByObject(this).orElse(null);
+        this.container = Loader.instance().getModList().stream()
+                .filter(modContainer -> modContainer.getMod() == this).findFirst().orElse(null);
 
-        markAsNotRequiredClientSide();
-
-        if (FMLEnvironment.dist.isClient()) {
-            LOGGER.info("Skipping LuckPerms init (not supported on the client!)");
-            return;
-        }
-
-        this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
+        this.loader = new JarInJarClassLoader(this.getClass().getClassLoader(), JAR_NAME);
+        FMLCommonHandler.instance().bus().register(this);
     }
 
     @Override
@@ -73,26 +58,10 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
         return this.container;
     }
 
-    public void onCommonSetup(FMLCommonSetupEvent event) {
+    // TODO: Check if right event
+    @Mod.EventHandler
+    public void onCommonSetup(final FMLInitializationEvent ignored) {
         this.plugin = this.loader.instantiatePlugin(BOOTSTRAP_CLASS, Supplier.class, this);
         this.plugin.onLoad();
     }
-
-    private static void markAsNotRequiredClientSide() {
-        try {
-            // workaround as we don't compile against java 17
-            ModLoadingContext.class.getDeclaredMethod("registerExtensionPoint", Class.class, Supplier.class)
-                    .invoke(
-                            ModLoadingContext.get(),
-                            IExtensionPoint.DisplayTest.class,
-                            (Supplier<?>) () -> new IExtensionPoint.DisplayTest(
-                                    () -> NetworkConstants.IGNORESERVERONLY,
-                                    (a, b) -> true
-                            )
-                    );
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
 }

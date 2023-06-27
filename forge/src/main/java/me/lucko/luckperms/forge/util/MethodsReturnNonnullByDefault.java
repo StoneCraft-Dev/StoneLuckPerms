@@ -23,31 +23,15 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge;
+package me.lucko.luckperms.forge.util;
 
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
-import me.lucko.luckperms.common.api.LuckPermsApiProvider;
-import me.lucko.luckperms.common.event.AbstractEventBus;
-import me.lucko.luckperms.common.plugin.LuckPermsPlugin;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import javax.annotation.Nonnull;
+import javax.annotation.meta.TypeQualifierDefault;
 
-public class ForgeEventBus extends AbstractEventBus<ModContainer> {
-    public ForgeEventBus(final LuckPermsPlugin plugin, final LuckPermsApiProvider apiProvider) {
-        super(plugin, apiProvider);
-    }
-
-    @Override
-    protected ModContainer checkPlugin(final Object mod) throws IllegalArgumentException {
-        final ModContainer modContainer =
-                Loader.instance().getModList().stream().filter(m -> m == mod).findFirst()
-                        .orElse(null);
-
-        if (modContainer != null) {
-            return modContainer;
-        }
-
-        throw new IllegalArgumentException(
-                "Object " + mod + " (" + mod.getClass().getName() + ") is not a ModContainer.");
-    }
-
-}
+@Nonnull
+@TypeQualifierDefault({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface MethodsReturnNonnullByDefault {}
