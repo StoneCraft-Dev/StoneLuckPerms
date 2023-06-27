@@ -25,84 +25,71 @@
 
 package me.lucko.luckperms.forge;
 
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.tree.ArgumentCommandNode;
-import com.mojang.brigadier.tree.LiteralCommandNode;
-import me.lucko.luckperms.common.command.BrigadierCommandExecutor;
-import me.lucko.luckperms.common.sender.Sender;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-
 import java.util.List;
-import java.util.ListIterator;
+import me.lucko.luckperms.common.command.CommandManager;
+import me.lucko.luckperms.common.command.utils.ArgumentTokenizer;
+import me.lucko.luckperms.common.sender.Sender;
+import net.minecraft.command.CommandBase;
+import net.minecraft.command.ICommandSender;
+import net.minecraft.command.ServerCommandManager;
 
-public class ForgeCommandExecutor extends BrigadierCommandExecutor<CommandSourceStack> {
+public class ForgeCommandExecutor extends CommandManager {
 
     private final LPForgePlugin plugin;
 
-    public ForgeCommandExecutor(LPForgePlugin plugin) {
+    public ForgeCommandExecutor(final LPForgePlugin plugin) {
         super(plugin);
         this.plugin = plugin;
+
+        this.registerCommands();
     }
 
-    @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        for (String alias : COMMAND_ALIASES) {
-            LiteralCommandNode<CommandSourceStack> command = Commands.literal(alias).executes(this).build();
-            ArgumentCommandNode<CommandSourceStack, String> argument = Commands.argument("args", StringArgumentType.greedyString())
-                    .suggests(this)
-                    .executes(this)
-                    .build();
+    public void registerCommands() {
+        for (final String alias : new String[] {"luckperms", "lp", "perm", "perms", "permission",
+                "permissions"}) {
+            this.plugin.getBootstrap().getServer().ifPresent(
+                    minecraftServer -> ((ServerCommandManager) minecraftServer.getCommandManager()).registerCommand(
+                            new CommandBase() {
+                                @Override
+                                public String getCommandName() {
+                                    return alias;
+                                }
 
-            command.addChild(argument);
-            event.getDispatcher().getRoot().addChild(command);
+                                @Override
+                                public boolean canCommandSenderUseCommand(
+                                        final ICommandSender sender) {
+                                    return true;
+                                }
+
+                                @Override
+                                public String getCommandUsage(final ICommandSender sender) {
+                                    return '/' + this.getCommandName() + "help";
+                                }
+
+                                @Override
+                                public void processCommand(final ICommandSender sender,
+                                        final String[] args) {
+                                    final Sender wrapped =
+                                            ForgeCommandExecutor.this.plugin.getSenderFactory()
+                                                    .wrap(sender);
+                                    final List<String> arguments =
+                                            ArgumentTokenizer.EXECUTE.tokenizeInput(args);
+                                    ForgeCommandExecutor.this.executeCommand(wrapped,
+                                            this.getCommandName(), arguments);
+                                }
+
+                                @Override
+                                public List<String> addTabCompletionOptions(
+                                        final ICommandSender sender, final String[] args) {
+                                    final Sender wrapped =
+                                            ForgeCommandExecutor.this.plugin.getSenderFactory()
+                                                    .wrap(sender);
+                                    final List<String> arguments =
+                                            ArgumentTokenizer.TAB_COMPLETE.tokenizeInput(args);
+                                    return ForgeCommandExecutor.this.tabCompleteCommand(wrapped,
+                                            arguments);
+                                }
+                            }));
         }
     }
-
-    @Override
-    public Sender getSender(CommandSourceStack source) {
-        return this.plugin.getSenderFactory().wrap(source);
-    }
-
-    @Override
-    public List<String> resolveSelectors(CommandSourceStack source, List<String> args) {
-        // usage of @ selectors requires at least level 2 permission
-        CommandSourceStack atAllowedSource = source.hasPermission(2) ? source : source.withPermission(2);
-        for (ListIterator<String> it = args.listIterator(); it.hasNext(); ) {
-            String arg = it.next();
-            if (arg.isEmpty() || arg.charAt(0) != '@') {
-                continue;
-            }
-
-            List<ServerPlayer> matchedPlayers;
-            try {
-                matchedPlayers = EntityArgument.entities().parse(new StringReader(arg)).findPlayers(atAllowedSource);
-            } catch (CommandSyntaxException e) {
-                this.plugin.getLogger().warn("Error parsing selector '" + arg + "' for " + source + " executing " + args, e);
-                continue;
-            }
-
-            if (matchedPlayers.isEmpty()) {
-                continue;
-            }
-
-            if (matchedPlayers.size() > 1) {
-                this.plugin.getLogger().warn("Error parsing selector '" + arg + "' for " + source + " executing " + args +
-                        ": ambiguous result (more than one player matched) - " + matchedPlayers);
-                continue;
-            }
-
-            ServerPlayer player = matchedPlayers.get(0);
-            it.set(player.getStringUUID());
-        }
-
-        return args;
-    }
-
 }

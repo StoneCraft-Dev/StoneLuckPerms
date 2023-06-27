@@ -25,6 +25,7 @@
 
 package me.lucko.luckperms.forge.listeners;
 
+import java.util.Map;
 import me.lucko.luckperms.common.api.implementation.ApiUser;
 import me.lucko.luckperms.common.event.LuckPermsEventListener;
 import me.lucko.luckperms.common.model.User;
@@ -33,63 +34,65 @@ import net.luckperms.api.event.EventBus;
 import net.luckperms.api.event.context.ContextUpdateEvent;
 import net.luckperms.api.event.user.UserDataRecalculateEvent;
 import net.luckperms.api.query.QueryOptions;
-import net.minecraft.server.level.ServerPlayer;
-
-import java.util.Map;
+import net.minecraft.entity.player.EntityPlayerMP;
 
 public class ForgeAutoOpListener implements LuckPermsEventListener {
     private static final String NODE = "luckperms.autoop";
 
     private final LPForgePlugin plugin;
 
-    public ForgeAutoOpListener(LPForgePlugin plugin) {
+    public ForgeAutoOpListener(final LPForgePlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void bind(EventBus bus) {
+    public void bind(final EventBus bus) {
         bus.subscribe(ContextUpdateEvent.class, this::onContextUpdate);
         bus.subscribe(UserDataRecalculateEvent.class, this::onUserDataRecalculate);
     }
 
-    private void onContextUpdate(ContextUpdateEvent event) {
-        event.getSubject(ServerPlayer.class).ifPresent(player -> refreshAutoOp(player, true));
+    private void onContextUpdate(final ContextUpdateEvent event) {
+        event.getSubject(EntityPlayerMP.class)
+                .ifPresent(player -> this.refreshAutoOp(player, true));
     }
 
-    private void onUserDataRecalculate(UserDataRecalculateEvent event) {
-        User user = ApiUser.cast(event.getUser());
-        this.plugin.getBootstrap().getPlayer(user.getUniqueId()).ifPresent(player -> refreshAutoOp(player, false));
+    private void onUserDataRecalculate(final UserDataRecalculateEvent event) {
+        final User user = ApiUser.cast(event.getUser());
+        this.plugin.getBootstrap().getPlayer(user.getUniqueId())
+                .ifPresent(player -> this.refreshAutoOp(player, false));
     }
 
-    private void refreshAutoOp(ServerPlayer player, boolean callerIsSync) {
+    private void refreshAutoOp(final EntityPlayerMP player, final boolean callerIsSync) {
         if (!callerIsSync && !this.plugin.getBootstrap().getServer().isPresent()) {
             return;
         }
 
-        User user = this.plugin.getUserManager().getIfLoaded(player.getUUID());
+        final User user = this.plugin.getUserManager().getIfLoaded(player.getUniqueID());
 
-        boolean value;
+        final boolean value;
         if (user != null) {
-            QueryOptions queryOptions = this.plugin.getContextManager().getQueryOptions(player);
-            Map<String, Boolean> permData = user.getCachedData().getPermissionData(queryOptions).getPermissionMap();
+            final QueryOptions queryOptions =
+                    this.plugin.getContextManager().getQueryOptions(player);
+            final Map<String, Boolean> permData =
+                    user.getCachedData().getPermissionData(queryOptions).getPermissionMap();
             value = permData.getOrDefault(NODE, false);
         } else {
             value = false;
         }
 
         if (callerIsSync) {
-            setOp(player, value);
+            this.setOp(player, value);
         } else {
-            this.plugin.getBootstrap().getScheduler().executeSync(() -> setOp(player, value));
+            this.plugin.getBootstrap().getScheduler().executeSync(() -> this.setOp(player, value));
         }
     }
 
-    private void setOp(ServerPlayer player, boolean value) {
+    private void setOp(final EntityPlayerMP player, final boolean value) {
         this.plugin.getBootstrap().getServer().ifPresent(server -> {
             if (value) {
-                server.getPlayerList().op(player.getGameProfile());
+                server.getConfigurationManager().addOp(player.getGameProfile());
             } else {
-                server.getPlayerList().deop(player.getGameProfile());
+                server.getConfigurationManager().removeOp(player.getGameProfile());
             }
         });
     }

@@ -12,9 +12,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'luckperms'
-include (
-        'api',
-        'common',
-        'common:loader-utils'
-)
+rootProject.name = 'forge'
+include ':forge-api'
+include ':loader'

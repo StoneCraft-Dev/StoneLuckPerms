@@ -26,68 +26,60 @@
 package me.lucko.luckperms.forge.messaging;
 
 import com.google.common.collect.Iterables;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import me.lucko.luckperms.common.messaging.pluginmsg.AbstractPluginMessageMessenger;
 import me.lucko.luckperms.common.plugin.scheduler.SchedulerTask;
 import me.lucko.luckperms.forge.LPForgePlugin;
 import net.luckperms.api.messenger.IncomingMessageConsumer;
 import net.luckperms.api.messenger.Messenger;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.Packet;
+import net.minecraft.network.play.server.S3FPacketCustomPayload;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.players.PlayerList;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.event.EventNetworkChannel;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class PluginMessageMessenger extends AbstractPluginMessageMessenger implements Messenger {
-    private static final ResourceLocation CHANNEL = new ResourceLocation(AbstractPluginMessageMessenger.CHANNEL);
 
     private final LPForgePlugin plugin;
-    private EventNetworkChannel channel;
+    private ForgeEventChannel channel;
 
-    public PluginMessageMessenger(LPForgePlugin plugin, IncomingMessageConsumer consumer) {
+    public PluginMessageMessenger(final LPForgePlugin plugin,
+            final IncomingMessageConsumer consumer) {
         super(consumer);
         this.plugin = plugin;
     }
 
+    // TODO: Check
     public void init() {
-        this.channel = NetworkRegistry.newEventChannel(CHANNEL, () -> "1", predicate -> true, predicate -> true);
-        this.channel.addListener(event -> {
-            byte[] buf = new byte[event.getPayload().readableBytes()];
-            event.getPayload().readBytes(buf);
-
-            handleIncomingMessage(buf);
-            event.getSource().get().setPacketHandled(true);
-        });
+        this.channel = new ForgeEventChannel(AbstractPluginMessageMessenger.CHANNEL,
+                this::handleIncomingMessage);
     }
 
     @Override
-    protected void sendOutgoingMessage(byte[] buf) {
-        AtomicReference<SchedulerTask> taskRef = new AtomicReference<>();
-        SchedulerTask task = this.plugin.getBootstrap().getScheduler().asyncRepeating(() -> {
-            ServerPlayer player = this.plugin.getBootstrap().getServer()
-                    .map(MinecraftServer::getPlayerList)
-                    .map(PlayerList::getPlayers)
-                    .map(players -> Iterables.getFirst(players, null))
-                    .orElse(null);
+    protected void sendOutgoingMessage(final byte[] buf) {
+        final AtomicReference<SchedulerTask> taskRef = new AtomicReference<>();
+        final SchedulerTask task = this.plugin.getBootstrap().getScheduler().asyncRepeating(() -> {
+            @SuppressWarnings("unchecked") final EntityPlayerMP player =
+                    this.plugin.getBootstrap().getServer()
+                            .map(MinecraftServer::getConfigurationManager)
+                            .map(serverConfigurationManager -> (List<EntityPlayerMP>) serverConfigurationManager.playerEntityList)
+                            .map(players -> Iterables.getFirst(players, null)).orElse(null);
 
             if (player == null) {
                 return;
             }
 
-            FriendlyByteBuf byteBuf = new FriendlyByteBuf(Unpooled.buffer());
+            final ByteBuf byteBuf = Unpooled.buffer();
             byteBuf.writeBytes(buf);
-            Packet<?> packet = new ClientboundCustomPayloadPacket(CHANNEL, byteBuf);
+            final Packet packet =
+                    new S3FPacketCustomPayload(AbstractPluginMessageMessenger.CHANNEL, byteBuf);
 
-            player.connection.send(packet);
+            player.playerNetServerHandler.sendPacket(packet);
 
-            SchedulerTask t = taskRef.getAndSet(null);
+            final SchedulerTask t = taskRef.getAndSet(null);
             if (t != null) {
                 t.cancel();
             }

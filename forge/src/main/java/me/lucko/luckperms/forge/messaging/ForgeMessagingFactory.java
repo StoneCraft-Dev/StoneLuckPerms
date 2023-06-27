@@ -35,17 +35,19 @@ import net.luckperms.api.messenger.MessengerProvider;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class ForgeMessagingFactory extends MessagingFactory<LPForgePlugin> {
-    public ForgeMessagingFactory(LPForgePlugin plugin) {
+    public ForgeMessagingFactory(final LPForgePlugin plugin) {
         super(plugin);
     }
 
     @Override
-    protected InternalMessagingService getServiceFor(String messagingType) {
-        if (messagingType.equals("pluginmsg") || messagingType.equals("bungee") || messagingType.equals("velocity")) {
+    protected InternalMessagingService getServiceFor(final String messagingType) {
+        if (messagingType.equals("pluginmsg") || messagingType.equals("bungee")
+                || messagingType.equals("velocity")) {
             try {
-                return new LuckPermsMessagingService(getPlugin(), new PluginMessageMessengerProvider());
-            } catch (Exception e) {
-                getPlugin().getLogger().severe("Exception occurred whilst enabling messaging", e);
+                return new LuckPermsMessagingService(this.getPlugin(),
+                        new PluginMessageMessengerProvider());
+            } catch (final Exception e) {
+                this.getPlugin().getLogger().severe("Exception occurred whilst enabling messaging", e);
             }
         }
 
@@ -60,8 +62,9 @@ public class ForgeMessagingFactory extends MessagingFactory<LPForgePlugin> {
         }
 
         @Override
-        public @NonNull Messenger obtain(@NonNull IncomingMessageConsumer incomingMessageConsumer) {
-            PluginMessageMessenger messenger = new PluginMessageMessenger(getPlugin(), incomingMessageConsumer);
+        public @NonNull Messenger obtain(@NonNull final IncomingMessageConsumer incomingMessageConsumer) {
+            final PluginMessageMessenger messenger =
+                    new PluginMessageMessenger(ForgeMessagingFactory.this.getPlugin(), incomingMessageConsumer);
             messenger.init();
             return messenger;
         }

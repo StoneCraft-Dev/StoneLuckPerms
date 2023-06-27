@@ -34,17 +34,18 @@ import net.luckperms.api.util.Tristate;
  * Permission processor which is added to the owner of an Integrated server to
  * simply return true if no other processors match.
  */
-public class ServerOwnerProcessor extends AbstractPermissionProcessor implements PermissionProcessor {
-    private static final TristateResult TRUE_RESULT = new TristateResult.Factory(ServerOwnerProcessor.class).result(Tristate.TRUE);
-
+public class ServerOwnerProcessor extends AbstractPermissionProcessor
+        implements PermissionProcessor {
     public static final ServerOwnerProcessor INSTANCE = new ServerOwnerProcessor();
+    private static final TristateResult TRUE_RESULT =
+            new TristateResult.Factory(ServerOwnerProcessor.class).result(Tristate.TRUE);
 
     private ServerOwnerProcessor() {
 
     }
 
     @Override
-    public TristateResult hasPermission(String permission) {
+    public TristateResult hasPermission(final String permission) {
         return TRUE_RESULT;
     }
 

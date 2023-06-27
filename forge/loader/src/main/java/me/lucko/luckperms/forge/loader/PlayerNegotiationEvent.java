@@ -23,31 +23,48 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge;
+package me.lucko.luckperms.forge.loader;
 
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
-import me.lucko.luckperms.common.api.LuckPermsApiProvider;
-import me.lucko.luckperms.common.event.AbstractEventBus;
-import me.lucko.luckperms.common.plugin.LuckPermsPlugin;
+import com.mojang.authlib.GameProfile;
+import cpw.mods.fml.common.eventhandler.Event;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import net.minecraft.network.NetworkManager;
 
-public class ForgeEventBus extends AbstractEventBus<ModContainer> {
-    public ForgeEventBus(final LuckPermsPlugin plugin, final LuckPermsApiProvider apiProvider) {
-        super(plugin, apiProvider);
+public class PlayerNegotiationEvent extends Event {
+
+    private final NetworkManager connection;
+    private final GameProfile profile;
+    private final List<Future<Void>> futures;
+
+
+    public PlayerNegotiationEvent(final NetworkManager connection, final GameProfile profile,
+            final List<Future<Void>> futures) {
+        this.connection = connection;
+        this.profile = profile;
+        this.futures = futures;
     }
 
-    @Override
-    protected ModContainer checkPlugin(final Object mod) throws IllegalArgumentException {
-        final ModContainer modContainer =
-                Loader.instance().getModList().stream().filter(m -> m == mod).findFirst()
-                        .orElse(null);
-
-        if (modContainer != null) {
-            return modContainer;
-        }
-
-        throw new IllegalArgumentException(
-                "Object " + mod + " (" + mod.getClass().getName() + ") is not a ModContainer.");
+    /**
+     * Enqueue work to be completed asynchronously before the login proceeds.
+     */
+    public void enqueueWork(final Runnable runnable) {
+        this.enqueueWork(CompletableFuture.runAsync(runnable));
     }
 
+    /**
+     * Enqueue work to be completed asynchronously before the login proceeds.
+     */
+    public void enqueueWork(final Future<Void> future) {
+        this.futures.add(future);
+    }
+
+    public NetworkManager getConnection() {
+        return this.connection;
+    }
+
+    public GameProfile getProfile() {
+        return this.profile;
+    }
 }

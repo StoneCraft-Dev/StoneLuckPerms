@@ -1,26 +1,78 @@
-plugins {
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id 'net.kyori.blossom' version '1.3.0'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://plugins.gradle.org/m2/' }
+        maven { url = "https://files.minecraftforge.net/maven" }
+    }
+    dependencies {
+        classpath('com.anatawa12.forge:ForgeGradle:1.2-1.0.+') {
+            changing = true
+        }
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.0'
+    }
 }
+
+apply plugin: 'maven'
+apply plugin: 'forge'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+version = '5.4'
 
 sourceCompatibility = 1.8
-targetCompatibility = 17
+targetCompatibility = 1.8
 
-blossom {
-    replaceTokenIn 'src/main/java/me/lucko/luckperms/forge/LPForgeBootstrap.java'
-    replaceToken '@version@', project.ext.fullVersion
+def determinePatchVersion = {
+    // get the name of the last tag
+    def tagInfo = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'describe', '--tags'
+        standardOutput = tagInfo
+    }
+    tagInfo = tagInfo.toString()
+
+    if (!tagInfo.contains('-')) {
+        return 0
+    }
+    return tagInfo.split("-")[1]
 }
 
+def majorVersion = '5'
+def minorVersion = '4'
+def patchVersion = determinePatchVersion()
+def apiVersion = majorVersion + '.' + minorVersion
+def fullVersion = apiVersion + '.' + patchVersion
+
 minecraft {
-    mappings channel: 'official', version: minecraftVersion
+    version = "${minecraftVersion}-${forgeVersion}"
+    mappings = "stable_12"
+
+    replaceIn 'LPForgeBootstrap.java'
+    replace '@version@', fullVersion
+}
+
+repositories {
+    flatDir {
+        dirs("libs")
+    }
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"
-    implementation project(':common')
-    compileOnly project(':common:loader-utils')
-    compileOnly project(':forge:forge-api')
+    compileOnly group: 'org.realityforge.org.jetbrains.annotations', name: 'org.jetbrains.annotations', version: '1.7.0'
+    compileOnly group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '3.1.6'
+    compileOnly group: 'net.kyori', name: 'adventure-api', version: '4.11.0'
+    compileOnly group: 'net.kyori', name: 'adventure-text-serializer-gson', version: '4.11.0'
+    compileOnly group: 'net.kyori', name: 'adventure-text-serializer-plain', version: '4.11.0'
+    compileOnly group: 'net.kyori', name: 'adventure-text-serializer-legacy', version: '4.11.0'
+    compileOnly group: 'ninja.leaping.configurate', name: 'configurate-hocon', version: '3.7.1'
+    compileOnly group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.19.0'
+
+    implementation files('api-5.4')
+    implementation files('common-5.4-SNAPSHOT')
+    compileOnly files('loader-utils-5.4-SNAPSHOT')
+    compileOnly project(':forge-api')
+    compileOnly project(':loader')
 }
 
 reobf {
@@ -28,7 +80,7 @@ reobf {
 }
 
 shadowJar {
-    archiveFileName = "luckperms-forge.jarinjar"
+    archiveName = "luckperms-forge.jarinjar"
 
     dependencies {
         include(dependency('me.lucko.luckperms:.*'))
@@ -57,4 +109,41 @@ shadowJar {
 
 artifacts {
     archives shadowJar
+}
+
+subprojects {
+    group = 'me.lucko.luckperms'
+    version = '5.4-SNAPSHOT'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+
+    jar {
+        from '../LICENSE.txt'
+    }
+
+    project.ext.majorVersion = majorVersion
+    project.ext.minorVersion = minorVersion
+    project.ext.patchVersion = patchVersion
+    project.ext.apiVersion = apiVersion
+    project.ext.fullVersion = fullVersion
+
+    repositories {
+        mavenCentral()
+        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        maven { url 'https://repo.lucko.me/' }
+        maven { url 'https://libraries.minecraft.net/' }
+    }
+}
+
+if (hasProperty('buildScan')) {
+    buildScan {
+        licenseAgreementUrl = 'https://scans.gradle.com/terms-of-service'
+        licenseAgree = 'yes'
+    }
 }
