@@ -40,15 +40,18 @@ public class ForgeCommandExecutor extends CommandManager {
     public ForgeCommandExecutor(final LPForgePlugin plugin) {
         super(plugin);
         this.plugin = plugin;
-
-        this.registerCommands();
     }
 
     public void registerCommands() {
+        System.out.println("REGISTERING....");
+        System.out.println("Is server present?: " + this.plugin.getBootstrap().getServer().isPresent());
+
         for (final String alias : new String[] {"luckperms", "lp", "perm", "perms", "permission",
                 "permissions"}) {
             this.plugin.getBootstrap().getServer().ifPresent(
-                    minecraftServer -> ((ServerCommandManager) minecraftServer.getCommandManager()).registerCommand(
+                    minecraftServer -> {
+                        System.out.println("Registering '" + alias + "'.");
+                        ((ServerCommandManager) minecraftServer.getCommandManager()).registerCommand(
                             new CommandBase() {
                                 @Override
                                 public String getCommandName() {
@@ -89,7 +92,7 @@ public class ForgeCommandExecutor extends CommandManager {
                                     return ForgeCommandExecutor.this.tabCompleteCommand(wrapped,
                                             arguments);
                                 }
-                            }));
+                            });});
         }
     }
 }

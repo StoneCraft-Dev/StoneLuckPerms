@@ -9,12 +9,11 @@ buildscript {
 }
 
 plugins {
-    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'java-library'
 }
 
-apply plugin: 'maven'
 apply plugin: 'forge'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

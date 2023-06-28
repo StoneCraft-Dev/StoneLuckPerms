@@ -68,6 +68,7 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
     private final LPForgeBootstrap bootstrap;
     private ForgeSenderFactory senderFactory;
     private ForgeConnectionListener connectionListener;
+    private ForgePlatformListener platformListener;
     private ForgeCommandExecutor commandManager;
     private StandardUserManager userManager;
     private StandardGroupManager groupManager;
@@ -85,11 +86,12 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
 
     protected void registerEarlyListeners() {
         this.connectionListener = new ForgeConnectionListener(this);
-        this.bootstrap.registerListeners(this.connectionListener,
-                ForgeEventBusFacade.EventBusType.BOTH);
+        //this.bootstrap.registerListeners(this.connectionListener,
+        //        ForgeEventBusFacade.EventBusType.BOTH);
 
-        final ForgePlatformListener platformListener = new ForgePlatformListener(this);
-        this.bootstrap.registerListeners(platformListener, ForgeEventBusFacade.EventBusType.BOTH);
+        this.platformListener = new ForgePlatformListener(this);
+        this.bootstrap.registerListeners(this.platformListener,
+                ForgeEventBusFacade.EventBusType.MC);
 
         final UserCapabilityListener userCapabilityListener = new UserCapabilityListener();
         this.bootstrap.registerListeners(userCapabilityListener,
@@ -210,6 +212,10 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
     @Override
     public ForgeConnectionListener getConnectionListener() {
         return this.connectionListener;
+    }
+
+    public ForgePlatformListener getPlatformListener() {
+        return this.platformListener;
     }
 
     @Override

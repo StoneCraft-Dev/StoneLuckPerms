@@ -25,8 +25,6 @@
 
 package me.lucko.luckperms.forge.listeners;
 
-import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import java.util.Arrays;
 import java.util.Locale;
@@ -43,7 +41,7 @@ public class ForgePlatformListener {
         this.plugin = plugin;
     }
 
-    @Mod.EventHandler
+    @SubscribeEvent
     public void onCommand(final CommandEvent event) {
         if (!this.plugin.getConfiguration().get(ConfigKeys.OPS_ENABLED)) {
             final String name = event.command.getCommandName().toLowerCase(Locale.ROOT);
@@ -51,13 +49,11 @@ public class ForgePlatformListener {
             if (name.equals("op") || name.equals("deop")) {
                 Message.OP_DISABLED.send(this.plugin.getSenderFactory().wrap(event.sender));
                 event.setCanceled(true);
-                return;
             }
         }
     }
 
-    @Mod.EventHandler
-    public void onServerStarted(final FMLServerStartedEvent ignored) {
+    public void onServerStarted() {
         if (!this.plugin.getConfiguration().get(ConfigKeys.OPS_ENABLED)) {
 
             this.plugin.getBootstrap().getServer().ifPresent(server -> {
@@ -66,8 +62,6 @@ public class ForgePlatformListener {
                 // TODO: Check
                 Arrays.stream(ops.getKeys()).forEach(ops::removeEntry);
             });
-
         }
     }
-
 }

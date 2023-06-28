@@ -10,13 +10,14 @@ buildscript {
         classpath('com.anatawa12.forge:ForgeGradle:1.2-1.0.+') {
             changing = true
         }
-        classpath 'com.github.jengelman.gradle.plugins:shadow:5.0.0'
     }
 }
 
-apply plugin: 'maven'
+plugins {
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
 apply plugin: 'forge'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

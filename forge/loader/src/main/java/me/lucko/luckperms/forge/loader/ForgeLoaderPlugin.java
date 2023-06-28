@@ -30,9 +30,12 @@ import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
+import cpw.mods.fml.common.event.FMLServerStartedEvent;
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import java.util.function.Supplier;
 import me.lucko.luckperms.common.loader.JarInJarClassLoader;
-import me.lucko.luckperms.common.loader.LoaderBootstrap;
+import me.lucko.luckperms.forge.LegacyLoaderBootstrap;
 
 @Mod(modid = "luckperms", acceptableRemoteVersions = "*")
 public class ForgeLoaderPlugin implements Supplier<ModContainer> {
@@ -43,7 +46,7 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
     private final ModContainer container;
 
     private final JarInJarClassLoader loader;
-    private LoaderBootstrap plugin;
+    private LegacyLoaderBootstrap plugin;
 
     public ForgeLoaderPlugin() {
         this.container = Loader.instance().getModList().stream()
@@ -61,7 +64,23 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
     // TODO: Check if right event
     @Mod.EventHandler
     public void onCommonSetup(final FMLInitializationEvent ignored) {
-        this.plugin = this.loader.instantiatePlugin(BOOTSTRAP_CLASS, Supplier.class, this);
+        this.plugin =
+                (LegacyLoaderBootstrap) this.loader.instantiatePlugin(BOOTSTRAP_CLASS, Supplier.class, this);
         this.plugin.onLoad();
+    }
+
+    @Mod.EventHandler
+    public void onServerAboutToStart(final FMLServerAboutToStartEvent event) {
+        this.plugin.onServerAboutToStart(event);
+    }
+
+    @Mod.EventHandler
+    public void onServerStarted(final FMLServerStartedEvent event) {
+        this.plugin.onServerStarted(event);
+    }
+
+    @Mod.EventHandler
+    public void onServerStopping(final FMLServerStoppingEvent event) {
+        this.plugin.onServerStopping(event);
     }
 }

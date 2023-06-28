@@ -27,12 +27,10 @@ package me.lucko.luckperms.forge;
 
 import com.mojang.authlib.GameProfile;
 import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
+import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
-import cpw.mods.fml.common.eventhandler.EventPriority;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.versioning.ArtifactVersion;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -44,7 +42,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
-import me.lucko.luckperms.common.loader.LoaderBootstrap;
 import me.lucko.luckperms.common.plugin.bootstrap.BootstrappedWithLoader;
 import me.lucko.luckperms.common.plugin.bootstrap.LuckPermsBootstrap;
 import me.lucko.luckperms.common.plugin.classpath.ClassPathAppender;
@@ -63,7 +60,7 @@ import org.apache.logging.log4j.LogManager;
  * Bootstrap plugin for LuckPerms running on Forge.
  */
 public final class LPForgeBootstrap
-        implements LuckPermsBootstrap, LoaderBootstrap, BootstrappedWithLoader {
+        implements LuckPermsBootstrap, LegacyLoaderBootstrap, BootstrappedWithLoader {
     public static final String ID = "luckperms";
 
     /**
@@ -154,12 +151,13 @@ public final class LPForgeBootstrap
             this.loadLatch.countDown();
         }
 
-        this.forgeEventBus.register(this, ForgeEventBusFacade.EventBusType.FML);
+        this.forgeEventBus.register(this, ForgeEventBusFacade.EventBusType.BOTH);
         this.plugin.registerEarlyListeners();
     }
 
-    @Mod.EventHandler
+    @Override
     public void onServerAboutToStart(final FMLServerAboutToStartEvent event) {
+        System.out.println("SERVER ABOUT TO START");
         this.server = event.getServer();
         try {
             this.plugin.enable();
@@ -168,8 +166,14 @@ public final class LPForgeBootstrap
         }
     }
 
-    @Mod.EventHandler
-    public void onServerStopping(final FMLServerStoppingEvent event) {
+    @Override
+    public void onServerStarted(final FMLServerStartedEvent ignored) {
+        this.plugin.getCommandManager().registerCommands();
+        this.plugin.getPlatformListener().onServerStarted();
+    }
+
+    @Override
+    public void onServerStopping(final FMLServerStoppingEvent ignored) {
         this.plugin.disable();
         this.forgeEventBus.unregisterAll();
         this.server = null;
