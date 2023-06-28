@@ -157,7 +157,6 @@ public final class LPForgeBootstrap
 
     @Override
     public void onServerAboutToStart(final FMLServerAboutToStartEvent event) {
-        System.out.println("SERVER ABOUT TO START");
         this.server = event.getServer();
         try {
             this.plugin.enable();

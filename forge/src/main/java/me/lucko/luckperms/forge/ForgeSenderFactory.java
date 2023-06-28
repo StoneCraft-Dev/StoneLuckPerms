@@ -25,8 +25,6 @@
 
 package me.lucko.luckperms.forge;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import java.util.UUID;
 import me.lucko.luckperms.common.cacheddata.result.TristateResult;
 import me.lucko.luckperms.common.locale.TranslationManager;
@@ -42,33 +40,16 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.rcon.RConConsoleSource;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.EnumTypeAdapterFactory;
 import net.minecraft.util.IChatComponent;
 
 public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, ICommandSender> {
-
-    private static final Gson GSON;
-
-    /**
-     * Taken from {@link net.minecraft.util.IChatComponent.Serializer} due to obfuscation errors.
-     */
-    static {
-        final GsonBuilder gsonBuilder = new GsonBuilder();
-
-        gsonBuilder.registerTypeHierarchyAdapter(IChatComponent.class, new IChatComponent.Serializer());
-        gsonBuilder.registerTypeHierarchyAdapter(ChatStyle.class, new ChatStyle.Serializer());
-        gsonBuilder.registerTypeAdapterFactory(new EnumTypeAdapterFactory());
-        GSON = gsonBuilder.create();
-    }
 
     public ForgeSenderFactory(final LPForgePlugin plugin) {
         super(plugin);
     }
 
     public static IChatComponent toNativeText(final Component component) {
-        return GSON.fromJson(GsonComponentSerializer.gson().serialize(component),
-                IChatComponent.class);
+        return IChatComponent.Serializer.jsonToComponent(GsonComponentSerializer.gson().serialize(component));
     }
 
     @Override

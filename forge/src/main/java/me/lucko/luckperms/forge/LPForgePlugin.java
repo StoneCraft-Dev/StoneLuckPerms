@@ -86,8 +86,8 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
 
     protected void registerEarlyListeners() {
         this.connectionListener = new ForgeConnectionListener(this);
-        //this.bootstrap.registerListeners(this.connectionListener,
-        //        ForgeEventBusFacade.EventBusType.BOTH);
+        this.bootstrap.registerListeners(this.connectionListener,
+                ForgeEventBusFacade.EventBusType.BOTH);
 
         this.platformListener = new ForgePlatformListener(this);
         this.bootstrap.registerListeners(this.platformListener,

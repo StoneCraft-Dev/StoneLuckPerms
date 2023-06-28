@@ -114,7 +114,8 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    // TODO: Fix
+    //@SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPlayerLoadFromFile(final PlayerEvent.LoadFromFile event) {
         final EntityPlayerMP player = (EntityPlayerMP) event.entityPlayer;
         final GameProfile profile = player.getGameProfile();

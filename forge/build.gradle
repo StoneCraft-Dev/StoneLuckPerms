@@ -38,8 +38,25 @@ dependencies {
     compileOnly 'org.jetbrains:annotations:23.1.0'
 }
 
-reobf {
-    shadowJar {}
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['-Xlint:all', '-Xlint:-path', "-AreobfSrgFile=${tasks.reobf.srg}"]
+    options.deprecation = true
+    options.encoding = 'utf8'
+}
+
+compileJava {
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+
+    options.compilerArgs += [
+            '-Xlint:all',
+            '-Xlint:-path',
+            '-Xlint:-processing',
+            "-AreobfSrgFile=${project.file('build/srgs/mcp-srg.srg').getCanonicalPath()}"
+    ]
+
+    options.deprecation = true
+    options.encoding = 'UTF-8'
 }
 
 shadowJar {
@@ -70,6 +87,20 @@ shadowJar {
     relocate 'org.yaml.snakeyaml', 'me.lucko.luckperms.lib.yaml'
 }
 
-artifacts {
-    archives shadowJar
+reobf {
+    reobf(shadowJar.archivePath) {
+        spec -> spec.classpath = configurations.compileClasspath
+    }
 }
+
+task copySrgs(type: Copy, dependsOn: "genSrgs") {
+    // using some FG hacks here
+    from plugins.getPlugin("forge").delayedFile("{SRG_DIR}")
+    include '**/*.srg'
+    into 'build/srgs'
+}
+
+setupDecompWorkspace.dependsOn copySrgs
+setupDevWorkspace.dependsOn copySrgs
+compileJava.dependsOn copySrgs
+reobf.dependsOn shadowJar
