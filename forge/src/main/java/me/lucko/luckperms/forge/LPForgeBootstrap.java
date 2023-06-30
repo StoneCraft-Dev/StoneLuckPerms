@@ -45,7 +45,6 @@ import java.util.function.Supplier;
 import me.lucko.luckperms.common.plugin.bootstrap.BootstrappedWithLoader;
 import me.lucko.luckperms.common.plugin.bootstrap.LuckPermsBootstrap;
 import me.lucko.luckperms.common.plugin.classpath.ClassPathAppender;
-import me.lucko.luckperms.common.plugin.classpath.JarInJarClassPathAppender;
 import me.lucko.luckperms.common.plugin.logging.Log4jPluginLogger;
 import me.lucko.luckperms.common.plugin.logging.PluginLogger;
 import me.lucko.luckperms.common.plugin.scheduler.SchedulerAdapter;
@@ -108,7 +107,7 @@ public final class LPForgeBootstrap
         this.loader = loader;
         this.logger = new Log4jPluginLogger(LogManager.getLogger(LPForgeBootstrap.ID));
         this.schedulerAdapter = new ForgeSchedulerAdapter(this);
-        this.classPathAppender = new JarInJarClassPathAppender(this.getClass().getClassLoader());
+        this.classPathAppender = file -> {};
         this.forgeEventBus = new ForgeEventBusFacade();
         this.plugin = new LPForgePlugin(this);
     }

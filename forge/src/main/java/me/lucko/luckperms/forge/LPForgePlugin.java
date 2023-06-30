@@ -26,6 +26,7 @@
 package me.lucko.luckperms.forge;
 
 import cpw.mods.fml.common.ModContainer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -107,11 +108,7 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
 
     @Override
     protected Set<Dependency> getGlobalDependencies() {
-        final Set<Dependency> dependencies = super.getGlobalDependencies();
-        dependencies.add(Dependency.CONFIGURATE_CORE);
-        dependencies.add(Dependency.CONFIGURATE_HOCON);
-        dependencies.add(Dependency.HOCON_CONFIG);
-        return dependencies;
+        return Collections.emptySet();
     }
 
     @Override

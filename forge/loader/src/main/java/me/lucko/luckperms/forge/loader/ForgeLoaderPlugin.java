@@ -25,7 +25,6 @@
 
 package me.lucko.luckperms.forge.loader;
 
-import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.ModContainer;
@@ -34,26 +33,18 @@ import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
 import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import java.util.function.Supplier;
-import me.lucko.luckperms.common.loader.JarInJarClassLoader;
+import me.lucko.luckperms.forge.LPForgeBootstrap;
 import me.lucko.luckperms.forge.LegacyLoaderBootstrap;
 
 @Mod(modid = "luckperms", acceptableRemoteVersions = "*")
 public class ForgeLoaderPlugin implements Supplier<ModContainer> {
 
-    private static final String JAR_NAME = "luckperms-forge.jarinjar";
-    private static final String BOOTSTRAP_CLASS = "me.lucko.luckperms.forge.LPForgeBootstrap";
-
     private final ModContainer container;
-
-    private final JarInJarClassLoader loader;
     private LegacyLoaderBootstrap plugin;
 
     public ForgeLoaderPlugin() {
         this.container = Loader.instance().getModList().stream()
                 .filter(modContainer -> modContainer.getMod() == this).findFirst().orElse(null);
-
-        this.loader = new JarInJarClassLoader(this.getClass().getClassLoader(), JAR_NAME);
-        FMLCommonHandler.instance().bus().register(this);
     }
 
     @Override
@@ -64,8 +55,7 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
     // TODO: Check if right event
     @Mod.EventHandler
     public void onCommonSetup(final FMLInitializationEvent ignored) {
-        this.plugin =
-                (LegacyLoaderBootstrap) this.loader.instantiatePlugin(BOOTSTRAP_CLASS, Supplier.class, this);
+        this.plugin = new LPForgeBootstrap(this);
         this.plugin.onLoad();
     }
 
