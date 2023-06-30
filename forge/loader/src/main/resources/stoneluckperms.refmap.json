@@ -1,0 +1,14 @@
+{
+  "mappings": {
+    "me/lucko/luckperms/forge/loader/mixins/MixinPlayerLoginNegotiation": {
+      "onNetworkTick": "Lnet/minecraft/server/network/NetHandlerLoginServer;func_147233_a()V"
+    }
+  },
+  "data": {
+    "searge": {
+      "me/lucko/luckperms/forge/loader/mixins/MixinPlayerLoginNegotiation": {
+        "onNetworkTick": "Lnet/minecraft/server/network/NetHandlerLoginServer;func_147233_a()V"
+      }
+    }
+  }
+}

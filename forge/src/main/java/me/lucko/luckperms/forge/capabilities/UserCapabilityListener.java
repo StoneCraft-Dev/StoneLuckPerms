@@ -33,15 +33,10 @@ public class UserCapabilityListener {
 
     @SubscribeEvent
     public void onPlayerClone(final PlayerEvent.Clone event) {
-        final EntityPlayer previousPlayer = event.original;
         final EntityPlayer currentPlayer = event.entityPlayer;
 
         try {
-            final UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);
-            final UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
-
-            current.initialise(previous);
-            current.getQueryOptionsCache().invalidate();
+            UserCapabilityImpl.get(currentPlayer).getQueryOptionsCache().invalidate();
         } catch (final IllegalStateException e) {
             // continue on if we cannot copy original data
         }

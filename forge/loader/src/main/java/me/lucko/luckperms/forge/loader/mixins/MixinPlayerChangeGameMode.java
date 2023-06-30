@@ -28,38 +28,35 @@ package me.lucko.luckperms.forge.loader.mixins;
 import javax.annotation.Nullable;
 import me.lucko.luckperms.forge.events.PlayerChangeGameModeEvent;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.management.ItemInWorldManager;
 import net.minecraft.world.WorldSettings;
 import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(value = ItemInWorldManager.class, remap = false)
-public class MixinPlayerChangeGameMode {
-
-    @Shadow
-    public EntityPlayerMP thisPlayerMP;
-    @Shadow
-    private WorldSettings.GameType gameType;
+@Mixin(ItemInWorldManager.class)
+public abstract class MixinPlayerChangeGameMode {
 
     /**
      * @author AlphaConqueror
      * @reason Implementation of {@link PlayerChangeGameModeEvent}
      */
+    @SuppressWarnings("unresolved")
     @Overwrite
-    public void setGameType(WorldSettings.GameType p_73076_1_) {
-        p_73076_1_ = this.onChangeGameType(this.thisPlayerMP, this.gameType, p_73076_1_);
+    public void func_73076_a(WorldSettings.GameType p_73076_1_) {
+        final ItemInWorldManagerAccessor accessor = (ItemInWorldManagerAccessor) this;
+
+        p_73076_1_ = this.onChangeGameType(accessor.getEntityPlayerMP(), accessor.getGameType(),
+                p_73076_1_);
 
         if (p_73076_1_ == null) {
             return;
         }
 
-        this.gameType = p_73076_1_;
-        p_73076_1_.configurePlayerCapabilities(this.thisPlayerMP.capabilities);
-        this.thisPlayerMP.sendPlayerAbilities();
+        accessor.setGameType(p_73076_1_);
+        p_73076_1_.configurePlayerCapabilities(accessor.getEntityPlayerMP().capabilities);
+        accessor.getEntityPlayerMP().sendPlayerAbilities();
     }
 
     @Unique

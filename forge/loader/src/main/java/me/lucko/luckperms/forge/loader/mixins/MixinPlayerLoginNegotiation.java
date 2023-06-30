@@ -25,43 +25,33 @@
 
 package me.lucko.luckperms.forge.loader.mixins;
 
-import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import me.lucko.luckperms.forge.events.PlayerNegotiationEvent;
-import net.minecraft.network.NetworkManager;
 import net.minecraft.server.network.NetHandlerLoginServer;
 import net.minecraftforge.common.MinecraftForge;
-import org.apache.logging.log4j.Logger;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = NetHandlerLoginServer.class, remap = false)
-public final class MixinPlayerLoginNegotiation {
-    @Shadow
-    @Final
-    private static Logger logger;
+@Mixin(NetHandlerLoginServer.class)
+public abstract class MixinPlayerLoginNegotiation {
+
     private final List<Future<Void>> pendingFutures = new ArrayList<>();
-    @Shadow
-    @Final
-    public NetworkManager networkManager;
-    @Shadow
-    private GameProfile loginGameProfile;
     private boolean negotiationStarted = false;
 
     @Inject(method = "onNetworkTick", at = @At("HEAD"))
     public void tickServer(final CallbackInfo ci) {
+        final NetHandlerLoginServerAccessor accessor = (NetHandlerLoginServerAccessor) this;
+
         if (!this.negotiationStarted) {
             final PlayerNegotiationEvent event =
-                    new PlayerNegotiationEvent(this.networkManager, this.loginGameProfile,
-                            this.pendingFutures);
+                    new PlayerNegotiationEvent(accessor.getNetworkManager(),
+                            accessor.getLoginGameProfile(), this.pendingFutures);
             MinecraftForge.EVENT_BUS.post(event);
             this.negotiationStarted = true;
         }
@@ -74,7 +64,8 @@ public final class MixinPlayerLoginNegotiation {
             try {
                 future.get();
             } catch (final ExecutionException ex) {
-                logger.error("Error during negotiation", ex.getCause());
+                NetHandlerLoginServerAccessor.getLogger()
+                        .error("Error during negotiation", ex.getCause());
             } catch (final CancellationException | InterruptedException ex) {
                 // no-op
             }

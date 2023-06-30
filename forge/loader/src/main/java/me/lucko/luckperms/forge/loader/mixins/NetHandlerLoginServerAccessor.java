@@ -23,17 +23,26 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.util;
+package me.lucko.luckperms.forge.loader.mixins;
 
-import java.util.function.Function;
-import org.jetbrains.annotations.NotNull;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.network.NetworkManager;
+import net.minecraft.server.network.NetHandlerLoginServer;
+import org.apache.logging.log4j.Logger;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-/**
- * Equivalent to {@link Function}, except with nonnull contract.
- *
- * @see Function
- */
-@FunctionalInterface
-public interface NonNullFunction<T, R> {
-    @NotNull R apply(@NotNull T t);
+@Mixin(NetHandlerLoginServer.class)
+public interface NetHandlerLoginServerAccessor {
+
+    @Accessor("field_147332_c")
+    static Logger getLogger() {
+        throw new AssertionError();
+    }
+
+    @Accessor("field_147333_a")
+    NetworkManager getNetworkManager();
+
+    @Accessor("field_147337_i")
+    GameProfile getLoginGameProfile();
 }

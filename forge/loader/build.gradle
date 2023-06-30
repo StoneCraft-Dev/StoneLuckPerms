@@ -44,7 +44,7 @@ dependencies {
     }
 }
 
-ext.mixinSrg = new File(project.buildDir, "resources/main/stoneluckperms.mixins.json")
+ext.mixinSrg = new File(project.buildDir, "resources/main/mixins.json")
 ext.mixinRefMap = new File(project.buildDir, "resources/main/stoneluckperms.refmap.json")
 
 build {
@@ -61,7 +61,9 @@ jar {
                 'Implementation-Version': project.ext.fullVersion,
                 'Specification-Title': 'luckperms',
                 'Specification-Vendor': 'LuckPerms',
-                'Specification-Version': '1'
+                'Specification-Version': '1',
+                'FMLCorePlugin': 'me.lucko.luckperms.forge.loader.ForgeLoaderPluginCore',
+                'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker'
         )
     }
 }

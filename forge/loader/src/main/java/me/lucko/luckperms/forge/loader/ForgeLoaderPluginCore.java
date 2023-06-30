@@ -23,15 +23,40 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.util;
+package me.lucko.luckperms.forge.loader;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import javax.annotation.Nonnull;
-import javax.annotation.meta.TypeQualifierDefault;
+import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
+import java.util.Map;
+import org.spongepowered.asm.mixin.Mixins;
 
-@Nonnull
-@TypeQualifierDefault({ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface MethodsReturnNonnullByDefault {}
+public class ForgeLoaderPluginCore implements IFMLLoadingPlugin {
+
+    public ForgeLoaderPluginCore() {
+        try {
+            Mixins.addConfiguration("stoneluckperms.mixins.json");
+        } catch (final Exception ignored) {}
+    }
+
+    @Override
+    public String[] getASMTransformerClass() {
+        return new String[0];
+    }
+
+    @Override
+    public String getModContainerClass() {
+        return ForgeLoaderPlugin.class.getCanonicalName();
+    }
+
+    @Override
+    public String getSetupClass() {
+        return null;
+    }
+
+    @Override
+    public void injectData(final Map<String, Object> data) {}
+
+    @Override
+    public String getAccessTransformerClass() {
+        return null;
+    }
+}

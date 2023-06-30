@@ -23,17 +23,23 @@
  *  SOFTWARE.
  */
 
-package me.lucko.luckperms.forge.util;
+package me.lucko.luckperms.forge.loader.mixins;
 
-import java.util.function.Supplier;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.management.ItemInWorldManager;
+import net.minecraft.world.WorldSettings;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-/**
- * Equivalent to {@link Supplier}, except with nonnull contract.
- *
- * @see Supplier
- */
-@FunctionalInterface
-public interface NonNullSupplier<T> {
-    @NotNull T get();
+@Mixin(ItemInWorldManager.class)
+public interface ItemInWorldManagerAccessor {
+
+    @Accessor("field_73090_b")
+    EntityPlayerMP getEntityPlayerMP();
+
+    @Accessor("field_73091_c")
+    WorldSettings.GameType getGameType();
+
+    @Accessor("field_73091_c")
+    void setGameType(final WorldSettings.GameType gameType);
 }

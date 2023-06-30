@@ -114,8 +114,7 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
         }
     }
 
-    // TODO: Fix
-    //@SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPlayerLoadFromFile(final PlayerEvent.LoadFromFile event) {
         final EntityPlayerMP player = (EntityPlayerMP) event.entityPlayer;
         final GameProfile profile = player.getGameProfile();
@@ -138,19 +137,22 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
                         + "before in this session.");
             }
 
-            final Component component =
-                    TranslationManager.render(Message.LOADING_STATE_ERROR.build(),
-                            Locale.getDefault());
-            if (this.plugin.getConfiguration().get(ConfigKeys.CANCEL_FAILED_LOGINS)) {
-                final IChatComponent chatComponent = ForgeSenderFactory.toNativeText(component);
+            if (player.playerNetServerHandler != null) {
+                final Component component =
+                        TranslationManager.render(Message.LOADING_STATE_ERROR.build(),
+                                Locale.getDefault());
 
-                player.playerNetServerHandler.netManager.scheduleOutboundPacket(
-                        new S40PacketDisconnect(ForgeSenderFactory.toNativeText(component)),
-                        p_operationComplete_1_ -> player.playerNetServerHandler.netManager.closeChannel(
-                                chatComponent));
-                player.playerNetServerHandler.netManager.disableAutoRead();
-            } else {
-                player.addChatMessage(ForgeSenderFactory.toNativeText(component));
+                if (this.plugin.getConfiguration().get(ConfigKeys.CANCEL_FAILED_LOGINS)) {
+                    final IChatComponent chatComponent = ForgeSenderFactory.toNativeText(component);
+
+                    player.playerNetServerHandler.netManager.scheduleOutboundPacket(
+                            new S40PacketDisconnect(ForgeSenderFactory.toNativeText(component)),
+                            p_operationComplete_1_ -> player.playerNetServerHandler.netManager.closeChannel(
+                                    chatComponent));
+                    player.playerNetServerHandler.netManager.disableAutoRead();
+                } else {
+                    player.addChatMessage(ForgeSenderFactory.toNativeText(component));
+                }
             }
         }
 

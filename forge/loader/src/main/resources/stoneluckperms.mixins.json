@@ -4,8 +4,10 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "stoneluckperms.refmap.json",
   "mixins": [
+    "ItemInWorldManagerAccessor",
     "MixinPlayerChangeGameMode",
-    "MixinPlayerLoginNegotiation"
+    "MixinPlayerLoginNegotiation",
+    "NetHandlerLoginServerAccessor"
   ],
   "client": []
 }

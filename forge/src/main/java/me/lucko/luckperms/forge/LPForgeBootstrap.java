@@ -295,7 +295,7 @@ public final class LPForgeBootstrap
     @SuppressWarnings("unchecked")
     public boolean isPlayerOnline(final UUID uniqueId) {
         return this.getServer().isPresent() && ((List<EntityPlayerMP>) this.getServer().get()
-                .getConfigurationManager()).stream()
+                .getConfigurationManager().playerEntityList).stream()
                 .anyMatch(entityPlayerMP -> entityPlayerMP.getUniqueID().equals(uniqueId));
     }
 

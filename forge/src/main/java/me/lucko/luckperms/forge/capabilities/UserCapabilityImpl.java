@@ -34,7 +34,6 @@ import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
 import me.lucko.luckperms.common.model.User;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
 import me.lucko.luckperms.forge.context.ForgeContextManager;
-import me.lucko.luckperms.forge.util.LazyOptional;
 import net.luckperms.api.query.QueryOptions;
 import net.luckperms.api.util.Tristate;
 import net.minecraft.entity.player.EntityPlayer;
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class UserCapabilityImpl implements UserCapability {
 
-    public static final Map<UUID, UserCapability> CAPABILITIES = new HashMap<>();
+    public static final Map<UUID, UserCapabilityImpl> CAPABILITIES = new HashMap<>();
     private boolean initialised = false;
     private User user;
     private QueryOptionsCache<EntityPlayerMP> queryOptionsCache;
@@ -53,19 +52,17 @@ public class UserCapabilityImpl implements UserCapability {
 
     public UserCapabilityImpl() {}
 
-    private static LazyOptional<UserCapability> getCapability(final EntityPlayer player) {
-        return LazyOptional.of(() -> CAPABILITIES.get(player.getUniqueID()));
-    }
-
     /**
      * Gets a {@link UserCapability} for a given {@link EntityPlayer}.
+     * If the capability does not exist, it is created.
      *
      * @param player the player
      * @return the capability
      */
     public static @NotNull UserCapabilityImpl get(@NotNull final EntityPlayer player) {
-        return (UserCapabilityImpl) getCapability(player).orElseThrow(
-                () -> new IllegalStateException("Capability missing for " + player.getUniqueID()));
+        CAPABILITIES.putIfAbsent(player.getUniqueID(), new UserCapabilityImpl());
+
+        return CAPABILITIES.get(player.getUniqueID());
     }
 
     /**
@@ -75,15 +72,7 @@ public class UserCapabilityImpl implements UserCapability {
      * @return the capability, or null
      */
     public static @Nullable UserCapabilityImpl getNullable(@NotNull final EntityPlayer player) {
-        return (UserCapabilityImpl) getCapability(player).resolve().orElse(null);
-    }
-
-    public void initialise(final UserCapabilityImpl previous) {
-        this.user = previous.user;
-        this.queryOptionsCache = previous.queryOptionsCache;
-        this.language = previous.language;
-        this.locale = previous.locale;
-        this.initialised = true;
+        return CAPABILITIES.get(player.getUniqueID());
     }
 
     public void initialise(final User user, final EntityPlayerMP player,

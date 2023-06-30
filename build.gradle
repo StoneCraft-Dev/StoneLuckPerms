@@ -2,13 +2,7 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1' apply false
 }
 
-apply plugin: 'project-report'
-
 defaultTasks 'licenseFormat', 'build'
-
-htmlDependencyReport {
-    projects = project.allprojects
-}
 
 subprojects {
     apply plugin: 'java'

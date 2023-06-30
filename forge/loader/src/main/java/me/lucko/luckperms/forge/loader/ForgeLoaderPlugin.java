@@ -25,9 +25,14 @@
 
 package me.lucko.luckperms.forge.loader;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+import cpw.mods.fml.common.DummyModContainer;
+import cpw.mods.fml.common.LoadController;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.ModMetadata;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
 import cpw.mods.fml.common.event.FMLServerStartedEvent;
@@ -37,14 +42,31 @@ import me.lucko.luckperms.forge.LPForgeBootstrap;
 import me.lucko.luckperms.forge.LegacyLoaderBootstrap;
 
 @Mod(modid = "luckperms", acceptableRemoteVersions = "*")
-public class ForgeLoaderPlugin implements Supplier<ModContainer> {
+public class ForgeLoaderPlugin extends DummyModContainer implements Supplier<ModContainer> {
 
     private final ModContainer container;
     private LegacyLoaderBootstrap plugin;
 
     public ForgeLoaderPlugin() {
+        super(getModMetadata());
+
         this.container = Loader.instance().getModList().stream()
                 .filter(modContainer -> modContainer.getMod() == this).findFirst().orElse(null);
+    }
+
+    private static ModMetadata getModMetadata() {
+        final ModMetadata meta = new ModMetadata();
+
+        meta.modId = "luckperms";
+
+        return meta;
+    }
+
+    @Override
+    public boolean registerBus(final EventBus bus, final LoadController controller) {
+        bus.register(this);
+
+        return true;
     }
 
     @Override
@@ -52,24 +74,23 @@ public class ForgeLoaderPlugin implements Supplier<ModContainer> {
         return this.container;
     }
 
-    // TODO: Check if right event
-    @Mod.EventHandler
+    @Subscribe
     public void onCommonSetup(final FMLInitializationEvent ignored) {
         this.plugin = new LPForgeBootstrap(this);
         this.plugin.onLoad();
     }
 
-    @Mod.EventHandler
+    @Subscribe
     public void onServerAboutToStart(final FMLServerAboutToStartEvent event) {
         this.plugin.onServerAboutToStart(event);
     }
 
-    @Mod.EventHandler
+    @Subscribe
     public void onServerStarted(final FMLServerStartedEvent event) {
         this.plugin.onServerStarted(event);
     }
 
-    @Mod.EventHandler
+    @Subscribe
     public void onServerStopping(final FMLServerStoppingEvent event) {
         this.plugin.onServerStopping(event);
     }
