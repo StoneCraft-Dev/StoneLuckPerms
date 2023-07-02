@@ -33,6 +33,7 @@ import me.lucko.luckperms.common.sender.Sender;
 import me.lucko.luckperms.common.sender.SenderFactory;
 import me.lucko.luckperms.common.verbose.VerboseCheckTarget;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
+import me.lucko.luckperms.forge.util.ChatMessageUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.luckperms.api.util.Tristate;
@@ -49,7 +50,8 @@ public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, ICommandSen
     }
 
     public static IChatComponent toNativeText(final Component component) {
-        return IChatComponent.Serializer.jsonToComponent(GsonComponentSerializer.gson().serialize(component));
+        return IChatComponent.Serializer.jsonToComponent(
+                GsonComponentSerializer.gson().serialize(component));
     }
 
     @Override
@@ -70,7 +72,11 @@ public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, ICommandSen
 
     @Override
     protected void sendMessage(final ICommandSender sender, final Component message) {
-        sender.addChatMessage(toNativeText(TranslationManager.render(message)));
+        final IChatComponent chatComponent = toNativeText(TranslationManager.render(message));
+
+        for (final IChatComponent comp : ChatMessageUtil.fixLineJumps(chatComponent)) {
+            sender.addChatMessage(comp);
+        }
     }
 
     @Override

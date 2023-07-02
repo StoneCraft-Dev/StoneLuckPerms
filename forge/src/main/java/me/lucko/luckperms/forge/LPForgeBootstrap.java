@@ -214,14 +214,14 @@ public final class LPForgeBootstrap
 
     @Override
     public String getServerBrand() {
-        return Optional.ofNullable(Loader.instance().getIndexedModList().get("forge"))
+        return Optional.ofNullable(Loader.instance().getIndexedModList().get("Forge"))
                 .map(ModContainer::getName).orElse("null");
     }
 
     @Override
     public String getServerVersion() {
         final String forgeVersion =
-                Optional.ofNullable(Loader.instance().getIndexedModList().get("forge"))
+                Optional.ofNullable(Loader.instance().getIndexedModList().get("Forge"))
                         .map(ModContainer::getProcessedVersion).map(ArtifactVersion::toString)
                         .orElse("null");
 
