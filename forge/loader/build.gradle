@@ -56,11 +56,11 @@ jar {
     manifest {
         attributes(
                 'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                'Implementation-Title': 'LuckPerms',
-                'Implementation-Vendor': 'LuckPerms',
+                'Implementation-Title': 'StoneLuckPerms',
+                'Implementation-Vendor': 'StoneLuckPerms',
                 'Implementation-Version': project.ext.fullVersion,
-                'Specification-Title': 'luckperms',
-                'Specification-Vendor': 'LuckPerms',
+                'Specification-Title': 'StoneLuckPerms',
+                'Specification-Vendor': 'StoneLuckPerms',
                 'Specification-Version': '1',
                 'FMLCorePlugin': 'me.lucko.luckperms.forge.loader.ForgeLoaderPluginCore',
                 'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker'
@@ -104,7 +104,7 @@ compileJava {
 }
 
 shadowJar {
-    archiveFileName = "LuckPerms-Forge-${project.ext.fullVersion}.jar"
+    archiveFileName = "StoneLuckPerms-Forge-${project.ext.fullVersion}.jar"
 
     dependencies {
         include(dependency('net.luckperms:.*'))
