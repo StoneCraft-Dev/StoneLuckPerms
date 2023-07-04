@@ -25,33 +25,41 @@
 
 package me.lucko.luckperms.forge.loader.mixins;
 
+import cpw.mods.fml.common.FMLLog;
+import cpw.mods.fml.common.network.handshake.NetworkDispatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import me.lucko.luckperms.forge.events.PlayerNegotiationEvent;
-import net.minecraft.server.network.NetHandlerLoginServer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.NetworkManager;
 import net.minecraftforge.common.MinecraftForge;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(NetHandlerLoginServer.class)
+@Mixin(value = NetworkDispatcher.class, remap = false)
 public abstract class MixinPlayerLoginNegotiation {
 
     private final List<Future<Void>> pendingFutures = new ArrayList<>();
+    @Shadow
+    @Final
+    public NetworkManager manager;
+    @Shadow
+    private EntityPlayerMP player;
     private boolean negotiationStarted = false;
 
-    @Inject(method = "onNetworkTick", at = @At("HEAD"))
-    public void tickServer(final CallbackInfo ci) {
-        final NetHandlerLoginServerAccessor accessor = (NetHandlerLoginServerAccessor) this;
-
+    @Inject(method = "serverInitiateHandshake", at = @At("HEAD"))
+    public void serverInitiateHandshake(final CallbackInfoReturnable<Integer> cir) {
         if (!this.negotiationStarted) {
             final PlayerNegotiationEvent event =
-                    new PlayerNegotiationEvent(accessor.getNetworkManager(),
-                            accessor.getLoginGameProfile(), this.pendingFutures);
+                    new PlayerNegotiationEvent(this.manager, this.player.getGameProfile(),
+                            this.pendingFutures);
             MinecraftForge.EVENT_BUS.post(event);
             this.negotiationStarted = true;
         }
@@ -64,8 +72,7 @@ public abstract class MixinPlayerLoginNegotiation {
             try {
                 future.get();
             } catch (final ExecutionException ex) {
-                NetHandlerLoginServerAccessor.getLogger()
-                        .error("Error during negotiation", ex.getCause());
+                FMLLog.severe("Error during negotiation", ex.getCause());
             } catch (final CancellationException | InterruptedException ex) {
                 // no-op
             }

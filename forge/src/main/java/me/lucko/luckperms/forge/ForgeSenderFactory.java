@@ -33,12 +33,15 @@ import me.lucko.luckperms.common.sender.Sender;
 import me.lucko.luckperms.common.sender.SenderFactory;
 import me.lucko.luckperms.common.verbose.VerboseCheckTarget;
 import me.lucko.luckperms.common.verbose.event.CheckOrigin;
+import me.lucko.luckperms.forge.capabilities.UserCapability;
+import me.lucko.luckperms.forge.capabilities.UserCapabilityImpl;
 import me.lucko.luckperms.forge.util.ChatMessageUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.luckperms.api.util.Tristate;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.rcon.RConConsoleSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.IChatComponent;
@@ -81,7 +84,13 @@ public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, ICommandSen
 
     @Override
     protected Tristate getPermissionValue(final ICommandSender commandSource, final String node) {
-        // TODO: Check
+        if (commandSource instanceof EntityPlayerMP) {
+            final EntityPlayerMP player = (EntityPlayerMP) commandSource;
+            final UserCapability user = UserCapabilityImpl.get(player);
+
+            return user.checkPermission(node);
+        }
+
         final VerboseCheckTarget target =
                 VerboseCheckTarget.internal(commandSource.getCommandSenderName());
         this.getPlugin().getVerboseHandler()

@@ -52,7 +52,6 @@ public class PluginMessageMessenger extends AbstractPluginMessageMessenger imple
         this.plugin = plugin;
     }
 
-    // TODO: Check
     public void init() {
         this.channel = new ForgeEventChannel(AbstractPluginMessageMessenger.CHANNEL,
                 this::handleIncomingMessage);

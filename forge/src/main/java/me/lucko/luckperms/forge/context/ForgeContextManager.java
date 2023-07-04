@@ -63,8 +63,8 @@ public class ForgeContextManager extends ContextManager<EntityPlayerMP, EntityPl
             final ImmutableContextSet contextSet) {
         final QueryOptions.Builder builder =
                 this.plugin.getConfiguration().get(ConfigKeys.GLOBAL_QUERY_OPTIONS).toBuilder();
-        if (subject.mcServer != null && subject.mcServer.getServerOwner()
-                .equals(subject.getCommandSenderName())) {
+        if (subject.mcServer != null && subject.getCommandSenderName()
+                .equals(subject.mcServer.getServerOwner())) {
             builder.option(INTEGRATED_SERVER_OWNER, true);
         }
 

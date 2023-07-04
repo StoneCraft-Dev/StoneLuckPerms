@@ -6,8 +6,7 @@
   "mixins": [
     "ItemInWorldManagerAccessor",
     "MixinPlayerChangeGameMode",
-    "MixinPlayerLoginNegotiation",
-    "NetHandlerLoginServerAccessor"
+    "MixinPlayerLoginNegotiation"
   ],
   "client": []
 }

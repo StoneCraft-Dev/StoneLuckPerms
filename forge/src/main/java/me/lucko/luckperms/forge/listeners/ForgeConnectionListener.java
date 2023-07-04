@@ -28,7 +28,6 @@ package me.lucko.luckperms.forge.listeners;
 import com.mojang.authlib.GameProfile;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -61,17 +60,16 @@ public class ForgeConnectionListener extends AbstractConnectionListener {
     public void onPlayerNegotiation(final PlayerNegotiationEvent event) {
         final String username = event.getProfile().getName();
         final UUID uniqueId = event.getProfile().isComplete() ? event.getProfile().getId()
-                : UUID.nameUUIDFromBytes(
-                        ("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+                : this.plugin.getBootstrap().lookupUniqueId(username).orElse(null);
 
         if (this.plugin.getConfiguration().get(ConfigKeys.DEBUG_LOGINS)) {
             this.plugin.getLogger()
                     .info("Processing pre-login (sync phase) for " + uniqueId + " - " + username);
         }
 
-        event.enqueueWork(CompletableFuture.runAsync(() -> {
-            this.onPlayerNegotiationAsync(event.getConnection(), uniqueId, username);
-        }, this.plugin.getBootstrap().getScheduler().async()));
+        event.enqueueWork(CompletableFuture.runAsync(
+                () -> this.onPlayerNegotiationAsync(event.getConnection(), uniqueId, username),
+                this.plugin.getBootstrap().getScheduler().async()));
     }
 
     private void onPlayerNegotiationAsync(final NetworkManager connection, final UUID uniqueId,

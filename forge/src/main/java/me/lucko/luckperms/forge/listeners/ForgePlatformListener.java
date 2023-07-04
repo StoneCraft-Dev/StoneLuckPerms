@@ -55,12 +55,11 @@ public class ForgePlatformListener {
 
     public void onServerStarted() {
         if (!this.plugin.getConfiguration().get(ConfigKeys.OPS_ENABLED)) {
-
             this.plugin.getBootstrap().getServer().ifPresent(server -> {
                 final UserListOps ops = server.getConfigurationManager().getOppedPlayers();
 
-                // TODO: Check
-                Arrays.stream(ops.getKeys()).forEach(ops::removeEntry);
+                Arrays.stream(ops.getKeys()).map(ops::getGameProfileFromName)
+                        .forEach(ops::removeEntry);
             });
         }
     }
