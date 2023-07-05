@@ -31,6 +31,11 @@ repositories {
     }
 }
 
+configurations {
+    shade
+    implementation.extendsFrom shade
+}
+
 dependencies {
     implementation project(':api')
     implementation project(':common')
@@ -38,7 +43,11 @@ dependencies {
     implementation project(':forge')
     implementation project(':forge:forge-api')
 
-    implementation("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
+    shade 'com.zaxxer:HikariCP:4.0.3'
+    shade 'org.mariadb.jdbc:mariadb-java-client:3.1.4'
+    shade 'com.mysql:mysql-connector-j:8.0.33'
+
+    shade("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         exclude module: 'launchwrapper'
         exclude module: 'guava'
     }
@@ -105,6 +114,8 @@ compileJava {
 
 shadowJar {
     archiveFileName = "StoneLuckPerms-Forge-${project.ext.fullVersion}.jar"
+    project.configurations.implementation.canBeResolved = true
+    configurations = [project.configurations.implementation, project.configurations.shade]
 
     dependencies {
         include(dependency('net.luckperms:.*'))
@@ -117,7 +128,7 @@ shadowJar {
         include(dependency('org.mariadb.jdbc:.*'))
         include(dependency('com.mysql:.*'))
         include(dependency('org.postgresql:.*'))
-        include(dependency('com.zaxxer.hikari:.*'))
+        include(dependency('com.zaxxer:.*'))
         include(dependency('com.mongodb:.*'))
         include(dependency('org.bson:.*'))
         include(dependency('redis.clients.jedis:.*'))
@@ -128,6 +139,7 @@ shadowJar {
         include(dependency('org.yaml.snakeyaml:.*'))
         include(dependency('org.spongepowered:.*'))
         include(dependency('com.typesafe:.*'))
+        include(dependency('org.slf4j:.*'))
     }
 
     relocate 'net.kyori.adventure', 'me.lucko.luckperms.lib.adventure'
@@ -149,6 +161,7 @@ shadowJar {
     relocate 'ninja.leaping.configurate', 'me.lucko.luckperms.lib.configurate'
     relocate 'org.yaml.snakeyaml', 'me.lucko.luckperms.lib.yaml'
     relocate 'com.typesafe', 'me.lucko.luckperms.lib.typesafe'
+    relocate 'org.slf4j', 'me.lucko.luckperms.lib.slf4j'
 
     exclude '**/module-info.class'
 }
