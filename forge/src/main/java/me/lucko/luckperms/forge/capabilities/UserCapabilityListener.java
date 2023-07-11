@@ -77,7 +77,7 @@ public class UserCapabilityListener {
 
             current.initialise(previous, (ServerPlayerEntity) currentPlayer,
                     this.plugin.getContextManager());
-            current.getQueryOptionsCache().invalidate();
+            this.plugin.getContextManager().signalContextUpdate((ServerPlayerEntity) currentPlayer);
         } finally {
             try {
                 UserCapabilityImpl.INVALIDATE_CAPS.invoke(previousPlayer);
