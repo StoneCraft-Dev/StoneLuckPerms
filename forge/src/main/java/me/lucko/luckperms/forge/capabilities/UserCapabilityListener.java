@@ -73,7 +73,7 @@ public class UserCapabilityListener {
 
             current.initialise(previous, (ServerPlayer) currentPlayer,
                     this.plugin.getContextManager());
-            current.getQueryOptionsCache().invalidate();
+            this.plugin.getContextManager().signalContextUpdate((ServerPlayer) currentPlayer);
         } catch (final IllegalStateException e) {
             // continue on if we cannot copy original data
         } finally {
