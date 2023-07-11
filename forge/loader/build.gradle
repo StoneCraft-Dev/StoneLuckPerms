@@ -53,7 +53,7 @@ dependencies {
     }
 }
 
-ext.mixinSrg = new File(project.buildDir, "resources/main/mixins.json")
+ext.mixinSrg = new File(project.buildDir, "resources/main/stoneluckperms.mixins.srg")
 ext.mixinRefMap = new File(project.buildDir, "resources/main/stoneluckperms.refmap.json")
 
 build {

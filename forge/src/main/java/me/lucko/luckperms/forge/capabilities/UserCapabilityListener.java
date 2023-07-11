@@ -26,17 +26,27 @@
 package me.lucko.luckperms.forge.capabilities;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import me.lucko.luckperms.forge.LPForgePlugin;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 
 public class UserCapabilityListener {
+
+    private final LPForgePlugin plugin;
+
+    public UserCapabilityListener(final LPForgePlugin plugin) {this.plugin = plugin;}
 
     @SubscribeEvent
     public void onPlayerClone(final PlayerEvent.Clone event) {
         final EntityPlayer currentPlayer = event.entityPlayer;
 
         try {
-            UserCapabilityImpl.get(currentPlayer).getQueryOptionsCache().invalidate();
+            final UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
+
+            current.resetQueryOptionsCache((EntityPlayerMP) currentPlayer,
+                    this.plugin.getContextManager());
+            this.plugin.getContextManager().signalContextUpdate((EntityPlayerMP) currentPlayer);
         } catch (final IllegalStateException e) {
             // continue on if we cannot copy original data
         }

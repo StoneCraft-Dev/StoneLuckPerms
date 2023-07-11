@@ -82,6 +82,11 @@ public class UserCapabilityImpl implements UserCapability {
         this.initialised = true;
     }
 
+    public void resetQueryOptionsCache(final EntityPlayerMP player,
+            final ForgeContextManager contextManager) {
+        this.queryOptionsCache = new QueryOptionsCache<>(player, contextManager);
+    }
+
     private void assertInitialised() {
         if (!this.initialised) {
             throw new IllegalStateException("Capability has not been initialised");
