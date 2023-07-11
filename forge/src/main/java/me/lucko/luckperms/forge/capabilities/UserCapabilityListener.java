@@ -25,6 +25,7 @@
 
 package me.lucko.luckperms.forge.capabilities;
 
+import com.google.gson.Gson;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -58,13 +59,9 @@ public class UserCapabilityListener {
 
     @SubscribeEvent
     public void onPlayerClone(PlayerEvent.Clone event) {
-        if (!event.isWasDeath()) {
-            return;
-        }
 
         Player previousPlayer = event.getOriginal();
         Player currentPlayer = event.getPlayer();
-
         previousPlayer.reviveCaps();
         try {
             UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);

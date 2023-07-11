@@ -25,6 +25,7 @@
 
 package me.lucko.luckperms.forge.capabilities;
 
+import com.google.gson.Gson;
 import me.lucko.luckperms.common.cacheddata.type.PermissionCache;
 import me.lucko.luckperms.common.context.manager.QueryOptionsCache;
 import me.lucko.luckperms.common.locale.TranslationManager;
@@ -37,6 +38,7 @@ import net.luckperms.api.util.Tristate;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
+import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,8 +52,21 @@ public class UserCapabilityImpl implements UserCapability {
      * @param player the player
      * @return the capability
      */
+    private static LazyOptional<UserCapability> getCapability(final Player player) {
+        if (player.isAlive())
+            return player.getCapability(UserCapabilityImpl.CAPABILITY);
+
+        try {
+            player.reviveCaps();
+            return player.getCapability(UserCapabilityImpl.CAPABILITY);
+        }
+        finally {
+            player.invalidateCaps();
+        }
+    }
+
     public static @NotNull UserCapabilityImpl get(@NotNull Player player) {
-        return (UserCapabilityImpl) player.getCapability(CAPABILITY)
+        return (UserCapabilityImpl)getCapability(player)
                 .orElseThrow(() -> new IllegalStateException("Capability missing for " + player.getUUID()));
     }
 
@@ -62,7 +77,7 @@ public class UserCapabilityImpl implements UserCapability {
      * @return the capability, or null
      */
     public static @Nullable UserCapabilityImpl getNullable(@NotNull Player player) {
-        return (UserCapabilityImpl) player.getCapability(CAPABILITY).resolve().orElse(null);
+        return (UserCapabilityImpl)getCapability(player).resolve().orElse(null);
     }
 
     private boolean initialised = false;
