@@ -24,8 +24,6 @@ include (
         'forge',
         'forge:loader',
         'forge:forge-api',
-        'nukkit',
-        'nukkit:loader',
         'sponge',
         'sponge:loader',
         'sponge:sponge-service',
