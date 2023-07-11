@@ -26,6 +26,7 @@
 package me.lucko.luckperms.forge.capabilities;
 
 import java.lang.reflect.InvocationTargetException;
+import me.lucko.luckperms.forge.LPForgePlugin;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -40,6 +41,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class UserCapabilityListener {
+
+    private final LPForgePlugin plugin;
+
+    public UserCapabilityListener(final LPForgePlugin plugin) {this.plugin = plugin;}
 
     @SubscribeEvent
     public void onAttachCapabilities(final AttachCapabilitiesEvent<Entity> event) {
@@ -70,7 +75,8 @@ public class UserCapabilityListener {
             final UserCapabilityImpl previous = UserCapabilityImpl.get(previousPlayer);
             final UserCapabilityImpl current = UserCapabilityImpl.get(currentPlayer);
 
-            current.initialise(previous);
+            current.initialise(previous, (ServerPlayerEntity) currentPlayer,
+                    this.plugin.getContextManager());
             current.getQueryOptionsCache().invalidate();
         } finally {
             try {

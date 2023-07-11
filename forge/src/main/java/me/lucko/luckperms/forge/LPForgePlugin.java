@@ -91,7 +91,7 @@ public class LPForgePlugin extends AbstractLuckPermsPlugin {
         final ForgePlatformListener platformListener = new ForgePlatformListener(this);
         this.bootstrap.registerListeners(platformListener);
 
-        final UserCapabilityListener userCapabilityListener = new UserCapabilityListener();
+        final UserCapabilityListener userCapabilityListener = new UserCapabilityListener(this);
         this.bootstrap.registerListeners(userCapabilityListener);
 
         final ForgePermissionHandlerListener permissionHandlerListener =

@@ -145,9 +145,10 @@ public class UserCapabilityImpl implements UserCapability {
         }
     }
 
-    public void initialise(final UserCapabilityImpl previous) {
+    public void initialise(final UserCapabilityImpl previous, final ServerPlayerEntity player,
+            final ForgeContextManager contextManager) {
         this.user = previous.user;
-        this.queryOptionsCache = previous.queryOptionsCache;
+        this.queryOptionsCache = new QueryOptionsCache<>(player, contextManager);
         this.language = previous.language;
         this.locale = previous.locale;
         this.initialised = true;
