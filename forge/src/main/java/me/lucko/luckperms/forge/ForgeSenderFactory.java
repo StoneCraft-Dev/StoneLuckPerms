@@ -101,7 +101,7 @@ public class ForgeSenderFactory extends SenderFactory<LPForgePlugin, CommandSour
 
     @Override
     protected void performCommand(CommandSourceStack sender, String command) {
-        sender.getServer().getCommands().performCommand(sender, command);
+        sender.getServer().getCommands().performCommand(sender.getServer().getCommands().getDispatcher().parse(command, sender), command);
     }
 
     @Override

@@ -64,7 +64,7 @@ public class UserCapabilityListener {
     @SubscribeEvent
     public void onPlayerClone(final PlayerEvent.Clone event) {
         final Player previousPlayer = event.getOriginal();
-        final Player currentPlayer = event.getPlayer();
+        final Player currentPlayer = event.getEntity();
 
         previousPlayer.reviveCaps();
         try {
